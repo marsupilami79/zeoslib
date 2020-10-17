@@ -1497,7 +1497,6 @@ end;
 { TZOracleTransaction }
 
 procedure TZOracleTransaction.BeforeDestruction;
-var Status: sword;
 begin
   inherited BeforeDestruction;
   fDestroying := True;
@@ -1506,7 +1505,7 @@ begin
       fSavepoints.Clear;
       if FStarted then
         RollBack;
-      Status := FOwner.FPlainDriver.OCIHandleFree(FOCITrans, OCI_HTYPE_TRANS);
+      FOwner.FPlainDriver.OCIHandleFree(FOCITrans, OCI_HTYPE_TRANS);
     finally
       FOCITrans := nil;
     end;
