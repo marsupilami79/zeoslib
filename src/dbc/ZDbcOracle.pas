@@ -285,7 +285,7 @@ type
   private
     fSavepoints: TStrings;
     fBranches: IZCollection;
-    fDoLog, FStarted, fLocal: Boolean;
+    fDoLog, FStarted, fLocal, fDestroying: Boolean;
     FOCITrans: POCITrans;
     FTxnMode: TZOCITxnMode;
     FCoupleMode: TZOCITxnCoupleMode;
@@ -1500,14 +1500,13 @@ procedure TZOracleTransaction.BeforeDestruction;
 var Status: sword;
 begin
   inherited BeforeDestruction;
+  fDestroying := True;
   if FOCITrans <> nil then begin
     try
       fSavepoints.Clear;
       if FStarted then
         RollBack;
       Status := FOwner.FPlainDriver.OCIHandleFree(FOCITrans, OCI_HTYPE_TRANS);
-      if Status <> OCI_SUCCESS then
-        FOwner.HandleErrorOrWarning(FOwner.FErrorHandle, Status, lcTransaction, 'OCIHandleFree', Self);
     finally
       FOCITrans := nil;
     end;
@@ -1549,6 +1548,7 @@ begin
   FCoupleMode := CoupleMode;
   fDoLog := True;
   fBranches := TZCollection.Create;
+  fDestroying := False;
   FOwner.FPlainDriver.OCIHandleAlloc(FOwner.FOCIEnv, FOCITrans, OCI_HTYPE_TRANS, 0, nil);
 end;
 {$IFDEF FPC} {$POP} {$ENDIF}
@@ -1562,6 +1562,7 @@ begin
   fSavepoints := TStringList.Create;
   ConSettings := Owner.ConSettings;
   fLocal := True;
+  fDestroying := False;
 end;
 
 function TZOracleTransaction.GetAutoCommit: Boolean;
@@ -1622,12 +1623,12 @@ begin
   if fSavepoints.Count > 0 then begin
     FOwner.ExecuteImmediat('ROLLBACK TO '+fSavepoints[fSavepoints.Count-1], lcTransaction);
     fSavepoints.Delete(fSavepoints.Count -1);
-  end else if not FStarted then
+  end else if not FStarted And Not fDestroying then
     raise EZSQLException.Create(SCannotUseRollback)
-  else try
+  else if FStarted Then try
     Status := FOwner.FPlainDriver.OCITransRollback(FOwner.FContextHandle,
       FOwner.FErrorHandle, OCI_DEFAULT);
-    if Status <> OCI_SUCCESS then
+    if (Status <> OCI_SUCCESS) And Not fDestroying then
       FOwner.HandleErrorOrWarning(FOwner.FErrorHandle, Status, lcTransaction, 'TRANSACTION ROLLBACK', Self);
   finally
     FStarted := False;
