@@ -473,7 +473,7 @@ begin
         54, 55, 101..124, {utf16}
         56, 62, {utf16le}
         60, 61, 160..183, {utf32}
-        45, 46, 224..247: {utf8mb4}
+        45, 46, 224..247, 255: {utf8mb4}
           begin
             Result.Precision := (FieldLength div 4);
             if Result.ColumnType = stString
