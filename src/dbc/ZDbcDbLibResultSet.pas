@@ -463,6 +463,7 @@ AssignGeneric:  {this is the old way we did determine the ColumnInformations}
       Signed := not (TDSType = tdsInt1);
     end;
     if (ColumnInfo.ColumnType in [stString, stUnicodeString, stAsciiStream, stUnicodeStream]) then
+    begin
       if (FPlainDriver.DBLibraryVendorType <> lvtMS) then
         ColumnInfo.ColumnCodePage := FClientCP
       else if (ColumnInfo.ColumnType in [stAsciiStream, stUnicodeStream]) then
@@ -470,6 +471,12 @@ AssignGeneric:  {this is the old way we did determine the ColumnInformations}
       else if (FUserEncoding = ceUTF8)
         then ColumnInfo.ColumnCodePage := zCP_UTF8
         else ColumnInfo.ColumnCodePage := zCP_NONE;
+
+      // This part MUST be removed when FreeTDS will start returning correct precisions!!!
+      // See https://zeoslib.sourceforge.io/viewtopic.php?p=159994#p159994
+      if (FDBLibConnection.GetProvider = dpMsSQL) and (ColumnInfo.ColumnCodePage = 65001) then
+        ColumnInfo.Precision := ColumnInfo.Precision Div 4;
+    end;
     ColumnsInfo.Add(ColumnInfo);
   end;
 
