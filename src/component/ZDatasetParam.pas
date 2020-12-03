@@ -989,7 +989,7 @@ uses TypInfo, {$IFDEF WITH_DBCONSTS} DBConsts {$ELSE} DBConst{$ENDIF}, Math,
   ZSysUtils, ZFastCode, ZMessages,
   ZDbcUtils, ZDbcResultSet,
   ZAbstractRODataset, ZAbstractConnection, ZSqlUpdate, ZDatasetUtils,
-  ZSqlProcessor;
+  ZSqlProcessor, AnsiStrings;
 
 var D1M1Y1: TDateTime;
 
