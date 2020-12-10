@@ -1038,7 +1038,7 @@ begin
 
   Flower_case_table_names := $FF;
   FIsMariaDB := false;
-  FIsMySQL := false;
+  FIsMySQL := True;
   FKnowServerType := false;
 end;
 
@@ -3231,7 +3231,7 @@ begin
 end;
 
 {**
-  Tries to detect wether the Server is MAriaDB or MySQL. The result can be
+  Tries to detect whether the Server is MariaDB or MySQL. The result can be
   queried with the methods isMariaDB and isMySQL.
 }
 procedure TZMySQLDatabaseMetadata.detectServerType;
@@ -3241,8 +3241,14 @@ begin
     FKnowServerType := true;
     VersionString := GetDatabaseInfo.GetDatabaseProductName;
     VersionString := LowerCase(VersionString);
-    FIsMariaDB := ZFastCode.Pos('mariadb', VersionString) > 0;
-    FIsMySQL := ZFastCode.Pos('mysql', VersionString) > 0;
+    // FIsMariaDB := ZFastCode.Pos('mariadb', VersionString) > 0;
+    // FIsMySQL := ZFastCode.Pos('mysql', VersionString) > 0;
+    FIsMySQL := True;
+    if ZFastCode.Pos('mariadb', VersionString) > 0 then
+    begin
+      FIsMySQL := False;
+      FIsMariaDB := True;
+    end;
   end;
 end;
 
