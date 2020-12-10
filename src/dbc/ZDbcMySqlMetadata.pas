@@ -239,7 +239,8 @@ type
       NamePattern: string; NameQualifier: TZIdentifierQualifier; out OutCatalog, OutNamePattern: string);
     function UncachedGetTables(const Catalog: string; const SchemaPattern: string;
       const TableNamePattern: string; const Types: TStringDynArray): IZResultSet; override;
-//    function UncachedGetSchemas: IZResultSet; override; -> Not implemented
+
+    function UncachedGetSchemas: IZResultSet; override;
     function UncachedGetCatalogs: IZResultSet; override;
     function UncachedGetTableTypes: IZResultSet; override;
     function UncachedGetColumns(const Catalog: string; const SchemaPattern: string;
@@ -1233,6 +1234,25 @@ begin
     FreeAndNil(List);
     MySQLCon := nil;
   end;
+end;
+
+{**
+  Gets the schema names available in this database.  The results
+  are ordered by schema name.
+
+  <P>The schema column is:
+   <OL>
+ 	<LI><B>TABLE_SCHEM</B> String => schema name
+   </OL>
+
+  @return <code>ResultSet</code> - each row has a single String column that is a
+  schema name
+}
+function TZMySQLDatabaseMetadata.UncachedGetSchemas: IZResultSet;
+begin
+  Result := CopyToVirtualResultSet(
+    GetConnection.CreateStatementWithParams(FInfo).ExecuteQuery('SHOW DATABASES'),
+    ConstructVirtualResultSet(SchemaColumnsDynArray));
 end;
 
 {**
@@ -2486,9 +2506,9 @@ var
   ResultSet: IZResultSet;
   RequiresInformationSchema: boolean;
 begin
-  // I do check the server version because I don't know how to check for the server type.
-  // MariaDB 10 supports the information_schema too, so we can use it there too.
-  RequiresInformationSchema := isMySQL and (GetConnection.GetHostVersion >= EncodeSQLVersioning(8,0,0));
+  // Changed to allow using information_schema on versions 5.7 and up. It's possible this could be lowered to 5.0.2
+  //   note that the ProcTable version has issues with parameters returning charset and collation data in newer versions.
+  RequiresInformationSchema := (GetConnection.GetHostVersion >= EncodeSQLVersioning(5,7,0));
 
   if RequiresInformationSchema
   then ResultSet := GetProceduresFromInformationSchema(Catalog, SchemaPattern, ProcedureNamePattern)
@@ -2504,7 +2524,7 @@ var
   ProcedureNameCondition, SchemaCondition: string;
 begin
   If SchemaPattern <> ''
-  then SchemaCondition := ConstructNameCondition(Catalog, 'R.ROUTINE_SCHEMA')
+  then SchemaCondition := ConstructNameCondition(SchemaPattern, 'R.ROUTINE_SCHEMA')
   else If Catalog <> ''
     then SchemaCondition := ConstructNameCondition(Catalog, 'R.ROUTINE_SCHEMA')
     else SchemaCondition := ConstructNameCondition(FDatabase, 'R.ROUTINE_SCHEMA');
@@ -2620,9 +2640,9 @@ function TZMySQLDatabaseMetadata.UncachedGetProcedureColumns(const Catalog: stri
 var
   RequiresInformationSchema: boolean;
 begin
-  // I do check the server version because I don't know how to check for the server type.
-  // MariaDB 10 supports the information_schema too, so we can use it there too.
-  RequiresInformationSchema := isMySQL and (GetConnection.GetHostVersion >= EncodeSQLVersioning(8,0,0));
+  // Changed to allow using information_schema on versions 5.7 and up. It's possible this could be lowered to 5.0.2
+  //   note that the ProcTable version has issues with parameters returning charset and collation data in newer versions.
+  RequiresInformationSchema := (GetConnection.GetHostVersion >= EncodeSQLVersioning(5,7,0));
 
   if RequiresInformationSchema
   then Result := GetProcedureColumnsFromInformationSchema(Catalog, SchemaPattern, ProcedureNamePattern, ColumnNamePattern)
@@ -2977,7 +2997,7 @@ var
   end;
 begin
   If SchemaPattern <> ''
-  then SchemaCondition := ConstructNameCondition(Catalog, 'P.SPECIFIC_SCHEMA')
+  then SchemaCondition := ConstructNameCondition(SchemaPattern, 'P.SPECIFIC_SCHEMA')
   else If Catalog <> ''
     then SchemaCondition := ConstructNameCondition(Catalog, 'P.SPECIFIC_SCHEMA')
     else SchemaCondition := ConstructNameCondition(FDatabase, 'P.SPECIFIC_SCHEMA');
