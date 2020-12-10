@@ -427,7 +427,10 @@ end;
 }
 function TZMySQLDatabaseInfo.StoresLowerCaseIdentifiers: Boolean;
 begin
-  Result := True; //https://dev.mysql.com/doc/refman/5.7/en/identifier-case-sensitivity.html
+  if Assigned(Metadata) then
+    Result := ((Metadata as TZMySQLDatabaseMetadata).Get_lower_case_table_names > 0)
+  else
+    Result := True; //https://dev.mysql.com/doc/refman/5.7/en/identifier-case-sensitivity.html
 end;
 
 {**
@@ -437,7 +440,10 @@ end;
 }
 function TZMySQLDatabaseInfo.StoresMixedCaseIdentifiers: Boolean;
 begin
-  Result := False; //https://dev.mysql.com/doc/refman/5.7/en/identifier-case-sensitivity.html
+  if Assigned(Metadata) then
+    Result := ((Metadata as TZMySQLDatabaseMetadata).Get_lower_case_table_names = 0)
+  else
+    Result := False; //https://dev.mysql.com/doc/refman/5.7/en/identifier-case-sensitivity.html
 end;
 
 {**
