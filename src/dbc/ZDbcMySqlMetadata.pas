@@ -239,6 +239,10 @@ type
       NamePattern: string; NameQualifier: TZIdentifierQualifier; out OutCatalog, OutNamePattern: string);
     function UncachedGetTables(const Catalog: string; const SchemaPattern: string;
       const TableNamePattern: string; const Types: TStringDynArray): IZResultSet; override;
+    function GetTablesFromInfoSchema(const Catalog: string; const SchemaPattern: string;
+      const TableNamePattern: string; const Types: TStringDynArray): IZResultSet; virtual;
+    function GetTablesFromShowTables(const Catalog: string; const SchemaPattern: string;
+      const TableNamePattern: string; const Types: TStringDynArray): IZResultSet; virtual;
 
     function UncachedGetSchemas: IZResultSet; override;
     function UncachedGetCatalogs: IZResultSet; override;
@@ -1163,6 +1167,73 @@ end;
 function TZMySQLDatabaseMetadata.UncachedGetTables(const Catalog: string;
   const SchemaPattern: string; const TableNamePattern: string;
   const Types: TStringDynArray): IZResultSet;
+begin
+  if (GetConnection.GetHostVersion >= EncodeSQLVersioning(5,0,2)) then
+    Result := GetTablesFromInfoSchema(Catalog, SchemaPattern, TableNamePattern, Types)
+  else
+    Result := GetTablesFromShowTables(Catalog, SchemaPattern, TableNamePattern, Types);
+end;
+
+function TZMySQLDatabaseMetadata.GetTablesFromInfoSchema(const Catalog, SchemaPattern, TableNamePattern: string;
+  const Types: TStringDynArray): IZResultSet;
+var
+  I: Integer;
+  LTypes: TStringDynArray;
+  SQL: string;
+  TableNameCondition, SchemaCondition: string;
+begin
+  If SchemaPattern <> ''
+  then SchemaCondition := ConstructNameCondition(SchemaPattern, 'TABLE_SCHEMA')
+  else If Catalog <> ''
+    then SchemaCondition := ConstructNameCondition(Catalog, 'TABLE_SCHEMA')
+    else SchemaCondition := ConstructNameCondition(FDatabase, 'TABLE_SCHEMA');
+  TableNameCondition := ConstructNameCondition(TableNamePattern,'TABLE_NAME');
+  // Note catalog blank, schema is "database"
+  SQL :=
+    // 'SELECT TABLE_CATALOG AS TABLE_CAT, ' +
+    'SELECT '''' AS TABLE_CAT, ' +
+    '  TABLE_SCHEMA AS TABLE_SCHEM, ' +
+    '  TABLE_NAME AS TABLE_NAME, ' +
+    '  CASE TABLE_TYPE ' +
+    '   WHEN ''BASE TABLE'' THEN ''TABLE'' ' +
+    '   ELSE TABLE_TYPE ' +
+    '  END AS TABLE_TYPE, ' +
+    '  TABLE_COMMENT AS REMARKS ' +
+    'FROM INFORMATION_SCHEMA.TABLES ' +
+    'WHERE 1=1 ';
+  if SchemaCondition <> '' then
+    SQL := SQL + ' AND ' + SchemaCondition;
+  {$IFDEF WITH_VAR_INIT_WARNING}LTypes := nil;{$ENDIF}
+  if (Pointer(Types) = nil) then
+  begin
+    SetLength(LTypes, 3);
+    LTypes[0] := 'BASE TABLE';
+    LTypes[1] := 'VIEW';
+    LTypes[2] := 'SYSTEM VIEW';
+  end
+  else
+  begin
+    SetLength(LTypes, Length(Types));
+    for I := 0 to High(Types) do
+      if Types[I] = 'TABLE' then
+        LTypes[I] := 'BASE TABLE'
+      else
+        LTypes[I] := Types[I];
+  end;
+  If TableNameCondition <> '' then
+    SQL := SQL + ' AND ' + TableNameCondition;
+  SQL := SQL + ' AND (false';
+  for I := 0 to High(LTypes) do
+    SQL := SQL + ' OR (TABLE_TYPE = ''' + LTypes[i] + ''')';
+  SQL := SQL + ') ORDER BY TABLE_TYPE, TABLE_SCHEM, TABLE_NAME';
+
+  Result := CopyToVirtualResultSet(
+    GetConnection.CreateStatement.ExecuteQuery(SQL),
+    ConstructVirtualResultSet(TableColumnsDynArray));
+end;
+
+function TZMySQLDatabaseMetadata.GetTablesFromShowTables(const Catalog, SchemaPattern, TableNamePattern: string;
+  const Types: TStringDynArray): IZResultSet;
 var
   Len: NativeUInt;
   LCatalog, LTableNamePattern, Tmp: string;
@@ -1171,6 +1242,7 @@ var
   I: Integer;
   MySQLCon: IZMySQLConnection;
 begin
+  // Original version using show tables and hard coded to show all as 'TABLE' (even views)
   Result := inherited UncachedGetTables(Catalog, SchemaPattern, TableNamePattern, Types);
   List := TStringList.Create;
   MySQLCon := GetConnection as IZMySQLConnection;
@@ -1200,7 +1272,8 @@ begin
         [IC.Quote(LCatalog, iqCatalog), LTableNamePattern])) do begin
         while Next do begin
           Result.MoveToInsertRow;
-          Result.UpdateString(CatalogNameIndex, LCatalog);
+          // Result.UpdateString(CatalogNameIndex, LCatalog);
+          Result.UpdateString(SchemaNameIndex, LCatalog);
           Result.UpdatePAnsiChar(TableNameIndex, GetPAnsiChar(FirstDbcIndex, Len), Len);
           Result.UpdateString(TableColumnsSQLType, 'TABLE');
           Result.InsertRow;
@@ -1218,7 +1291,8 @@ begin
           if (RS <> nil) then begin
             if RS.Next then begin
               Result.MoveToInsertRow;
-              Result.UpdateString(CatalogNameIndex, LCatalog);
+              // Result.UpdateString(CatalogNameIndex, LCatalog);
+              Result.UpdateString(SchemaNameIndex, LCatalog);
               Result.UpdateString(TableNameIndex, LTableNamePattern);
               Result.UpdateString(TableColumnsSQLType, 'TABLE');
               Result.InsertRow;
@@ -1289,12 +1363,25 @@ end;
   table type
 }
 function TZMySQLDatabaseMetadata.UncachedGetTableTypes: IZResultSet;
+const
+  TableTypes: array[0..2] of string = (
+    'TABLE', 'VIEW', 'SYSTEM VIEW');
+var
+  I: Integer;
+  HighIndex: Integer;
 begin
   Result := inherited UncachedGetTableTypes;
-
-  Result.MoveToInsertRow;
-  Result.UpdateString(TableTypeColumnTableTypeIndex, 'TABLE');
-  Result.InsertRow;
+  // This check needs to match the one in GetTables
+  if (GetConnection.GetHostVersion >= EncodeSQLVersioning(5,0,2)) then
+    HighIndex := High(TableTypes)
+  else
+    HighIndex := 0;   // older version just returned 'TABLE'
+  for I := 0 to HighIndex do
+  begin
+    Result.MoveToInsertRow;
+    Result.UpdateString(TableTypeColumnTableTypeIndex, TableTypes[I]);
+    Result.InsertRow;
+  end;
 end;
 
 {**
@@ -1403,8 +1490,8 @@ begin
         begin
           {initialise some variables}
           Result.MoveToInsertRow;
-          Result.UpdateString(CatalogNameIndex, TempCatalog);
-          Result.UpdateString(SchemaNameIndex, '');
+          // Result.UpdateString(CatalogNameIndex, TempCatalog);
+          Result.UpdateString(SchemaNameIndex, TempCatalog);
           Result.UpdateString(TableNameIndex, TempTableNamePattern) ;
           Result.UpdatePAnsiChar(ColumnNameIndex, GetPAnsiChar(ColumnIndexes[1], Len), Len);
 
@@ -1619,7 +1706,8 @@ begin
         begin
           Result.MoveToInsertRow;
           Privilege := Trim(PrivilegesList.Strings[I]);
-          Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(db_Index, Len), Len);
+          // Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(db_Index, Len), Len);
+          Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(db_Index, Len), Len);
           //Result.UpdateNull(SchemaNameIndex);
           Result.UpdateString(TableNameIndex, Table);
           Result.UpdatePAnsiChar(ColumnNameIndex, GetPAnsiChar(column_name_Index, Len), Len);
@@ -1721,7 +1809,8 @@ begin
         begin
           Result.MoveToInsertRow;
           Privilege := Trim(PrivilegesList.Strings[I]);
-          Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(db_Index, Len), Len);
+          // Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(db_Index, Len), Len);
+          Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(db_Index, Len), Len);
           //Result.UpdateNull(SchemaNameIndex);
           Result.UpdatePAnsiChar(TableNameIndex, GetPAnsiChar(table_name_Index, Len), Len);
           Result.UpdatePAnsiChar(TablePrivGrantorIndex, GetPAnsiChar(grantor_Index, Len), Len);
@@ -1790,8 +1879,8 @@ begin
       Trim(L, P);
       if (L >= 3) and ZSysUtils.SameText(PAnsiChar('PRI'), P, 3) then begin
         Result.MoveToInsertRow;
-        Result.UpdateString(CatalogNameIndex, LCatalog);
-        Result.UpdateString(SchemaNameIndex, '');
+        // Result.UpdateString(CatalogNameIndex, LCatalog);
+        Result.UpdateString(SchemaNameIndex, LCatalog);
         Result.UpdateString(TableNameIndex, Table);
         Result.UpdatePAnsiChar(PrimaryKeyColumnNameIndex, GetPAnsiChar(ColumnIndexes[2], Len), Len);
         Result.UpdateInt(PrimaryKeyKeySeqIndex, GetInt(ColumnIndexes[3]));
@@ -2432,7 +2521,8 @@ var
       ColumnIndexes[7] := FindColumn('Cardinality');
       while Next do begin
         Result.MoveToInsertRow;
-        Result.UpdateString(CatalogNameIndex, Catalog);
+        // Result.UpdateString(CatalogNameIndex, Catalog);
+        Result.UpdateString(SchemaNameIndex, Catalog);
         //Result.UpdateNull(SchemaNameIndex);
         Result.UpdatePAnsiChar(TableNameIndex, GetPAnsiChar(ColumnIndexes[1], Len), Len);
         Result.UpdateString(IndexInfoColNonUniqueIndex, LowerCase(BoolStrs[GetInt(ColumnIndexes[2]) = 0]));
@@ -2457,7 +2547,7 @@ begin
   if Table = '' then begin
     RS := GetTables(Catalog, AddEscapeCharToWildcards(Schema), AddEscapeCharToWildcards(Table), nil);
     while RS.Next do begin
-      LCatalog := RS.GetString(CatalogNameIndex);
+      LCatalog := RS.GetString(SchemaNameIndex);
       LTable := RS.GetString(TableNameIndex);
       FillResult(Result, LCatalog, LTable);
     end;
@@ -2796,7 +2886,7 @@ begin
                 Params.Insert(0,'IN'); //Function in value
 
           Result.MoveToInsertRow;
-          Result.UpdateRawByteString(CatalogNameIndex, 'def');
+          Result.UpdateRawByteString(CatalogNameIndex, '');
           Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(PROCEDURE_SCHEM_index, Len), Len); //PROCEDURE_SCHEM
           Result.UpdatePAnsiChar(ProcColProcedureNameIndex, GetPAnsiChar(PROCEDURE_NAME_Index, Len), Len); //PROCEDURE_NAME
           {$IFDEF UNICODE}
@@ -3031,8 +3121,8 @@ begin
         GetInt(myProcColScaleIndex), GetInt(myExtraMaxCharLength), ZType, ZPrecision, ZScale);
 
       Result.MoveToInsertRow;
-      if not IsNull(CatalogNameIndex) then
-        Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(CatalogNameIndex, Len), Len);
+      // if not IsNull(CatalogNameIndex) then
+      //   Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(CatalogNameIndex, Len), Len);
       if not IsNull(SchemaNameIndex) then
         Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(SchemaNameIndex, Len), Len);
       if not IsNull(SchemaNameIndex) then
@@ -3179,7 +3269,7 @@ begin
           if Next then
           begin
             Result.MoveToInsertRow;
-            Result.UpdateString(CatalogNameIndex, LCatalog);   //COLLATION_CATALOG
+            // Result.UpdateString(CatalogNameIndex, LCatalog);   //COLLATION_CATALOG
             Result.UpdateString(SchemaNameIndex, LCatalog);   //COLLATION_SCHEMA
             Result.UpdateString(TableNameIndex, TableNamePattern); //COLLATION_TABLE
             Result.UpdateString(ColumnNameIndex, ColumnNamePattern);//COLLATION_COLUMN
@@ -3203,7 +3293,7 @@ begin
           if Next then
           begin
             Result.MoveToInsertRow;
-            Result.UpdateString(CatalogNameIndex, LCatalog);
+            // Result.UpdateString(CatalogNameIndex, LCatalog);
             Result.UpdateString(SchemaNameIndex, LCatalog);
             Result.UpdateString(TableNameIndex, TableNamePattern);
             Result.UpdatePAnsiChar(CollationNameIndex, GetPAnsiChar(COLLATION_NAME_Index, Len), Len);  //COLLATION_NAME
@@ -3227,7 +3317,7 @@ begin
         if Next then
         begin
           Result.MoveToInsertRow;
-          Result.UpdateString(CatalogNameIndex, LCatalog);
+          // Result.UpdateString(CatalogNameIndex, LCatalog);
           Result.UpdateString(SchemaNameIndex, LCatalog);
           Result.UpdatePAnsiChar(CollationNameIndex, GetPAnsiChar(COLLATION_NAME_Index, Len), Len);
           Result.UpdatePAnsiChar(CharacterSetNameIndex, GetPAnsiChar(CHARACTER_SET_NAME_Index, Len), Len);
