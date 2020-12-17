@@ -1897,9 +1897,11 @@ end;
 
 procedure TZAbstractResultSet.Close;
 var RefCountAdded: Boolean;
+ a: Integer;
 begin
-  if FOpenLobStreams.Count > 0 then
-    raise EZSQLException.Create('close all lob streams before closing the resultset');
+  For a := 0 To FOpenLobStreams.Count - 1 Do
+   FOpenLobStreams[a] := nil;
+
   if not Closed then begin
     BeforeClose;
     FClosed := True;
