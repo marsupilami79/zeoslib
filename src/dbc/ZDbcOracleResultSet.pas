@@ -2891,8 +2891,7 @@ end;
 destructor TZAbstracOracleLobStream.Destroy;
 begin
   FOwnerLob.FLobStream := nil;
-  if (FOwnerLob.FLobLocator <> nil) then
-    Close;
+  Close;
   inherited;
 end;
 
