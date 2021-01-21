@@ -1840,6 +1840,7 @@ procedure TZAbstractRODataset.UpdateSQLStrings(Sender: TObject);
 var
   I: Integer;
   OldParams: {$IFNDEF DISABLE_ZPARAM}TZParams{$ELSE}TParams{$ENDIF};
+  param: {$IFNDEF DISABLE_ZPARAM}TZParam{$ELSE}TParam{$ENDIF};
 begin
   FieldDefs.Clear;
   if Active
@@ -1858,8 +1859,11 @@ begin
 
   try
     for I := 0 to TZSQLStrings(Sender).ParamCount - 1 do
-      FParams.CreateParam(ftUnknown, TZSQLStrings(Sender).ParamNames[I], ptUnknown);
-    FParams.AssignValues(OldParams);
+    Begin
+      param := FParams.CreateParam(ftUnknown, TZSQLStrings(Sender).ParamNames[I], ptUnknown);
+      If Assigned(OldParams.FindParam(param.Name)) Then
+        param.Assign(OldParams.ParamByName(param.Name));
+    End;
   finally
     OldParams.Free;
   end;

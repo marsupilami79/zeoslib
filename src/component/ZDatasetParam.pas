@@ -1289,6 +1289,7 @@ begin
   FParamType := Param.FParamType;
   FDecimalSeperator := Param.FDecimalSeperator;
   FSize := Param.FSize;
+  FName := Param.Name;
   if (Param.FArraySize = 0) and not FNull and (Ord(FSQLDataType) >= Ord(stString)) then begin
     { inc the refcounts }
     FData.pvPointer := nil; //avoid gpf
