@@ -105,6 +105,10 @@ type
   TZArrayType = (atDML, atIN{, atArrayField yet not supported});
   TZParams = class; //forward
   TZParam = class(TCollectionItem)
+  private
+    function GetDateFormat: String;
+    function GetTimeFormat: String;
+    function GetDateTimeFormat: String;
   private //MemoryControl
     FDynamicParamType: Boolean;
   protected
@@ -1897,20 +1901,20 @@ jmpLenFromPEnd:   Len := PEnd - PAnsiChar(@TinyBuffer[0]);
     stDate:     begin
                   with PZDate(DataAddr)^ do
                   Len := DateToRaw(Year, Month, Day, @TinyBuffer[0],
-                    {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, False, IsNegative);
+                    GetDateFormat, False, IsNegative);
                   goto jmpSetFromBuf;
                 end;
     stTime:     begin
                   with PZTime(DataAddr)^ do
                   Len := TimeToRaw(Hour, Minute, Second, Fractions, @TinyBuffer[0],
-                    {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, False, IsNegative);
+                    GetTimeFormat, False, IsNegative);
                   goto jmpSetFromBuf;
                 end;
     stTimestamp:begin
                   with PZTimeStamp(DataAddr)^ do
                   Len := DateTimeToRaw(Year, Month, Day, Hour, Minute,
                     Second, Fractions, @TinyBuffer[0],
-                    {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat, False, IsNegative);
+                    GetDateTimeFormat, False, IsNegative);
 jmpSetFromBuf:    {$IFDEF WITH_RAWBYTESTRING}
                   ZSetString(PAnsiChar(@TinyBuffer[0]), Len, Result, CodePage);
                   {$ELSE}
@@ -2017,6 +2021,30 @@ begin
     DataAddress := Pointer(PAnsiChar(FData.pvDynArray.VArray)+(Cardinal(Index)*ZDataOffsetSizes[FSQLDataType]));
     Result := TBooleanDynArray(FData.pvDynArray.VIsNullArray)[Cardinal(Index)];
   end;
+end;
+
+function TZParam.GetDateFormat: String;
+begin
+  if FConSettings <> nil then
+    Result := FConSettings^.ReadFormatSettings.DateFormat
+  else
+    Result := {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat;
+end;
+
+function TZParam.GetTimeFormat: String;
+begin
+  if FConSettings <> nil then
+    Result := FConSettings^.ReadFormatSettings.TimeFormat
+  else
+    Result := {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat;
+end;
+
+function TZParam.GetDateTimeFormat: String;
+begin
+  if FConSettings <> nil then
+    Result := FConSettings^.ReadFormatSettings.DateTimeFormat
+  else
+    Result := {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat;
 end;
 
 function TZParam.GetIsNulls(Index: Cardinal): Boolean;
@@ -2165,18 +2193,18 @@ jmpLenFromPEnd:   Len := PEnd - PWideChar(@TinyBuffer[0]);
                 end;
     stDate:     with PZDate(DataAddr)^ do begin
                   Len := DateToUni(Year, Month, Day, @TinyBuffer[0],
-                    {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, False, IsNegative);
+                    GetDateFormat, False, IsNegative);
                   goto jmpSetFromBuf;
                 end;
     stTime:     with PZTime(DataAddr)^ do begin
                   Len := TimeToUni(Hour, Minute, Second, Fractions, @TinyBuffer[0],
-                    {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, False, IsNegative);
+                    GetTimeFormat, False, IsNegative);
                   goto jmpSetFromBuf;
                 end;
     stTimestamp:with PZTimestamp(DataAddr)^ do begin
                   Len := DateTimeToUni(Year, Month, Day, Hour, Minute, Second,
                     Fractions, @TinyBuffer[0],
-                    {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat, False, IsNegative);
+                    GetDateTimeFormat, False, IsNegative);
 jmpSetFromBuf:    System.SetString(Result, PWideChar(@TinyBuffer[0]), Len);
                 end;
     stAsciiStream, stUnicodeStream: FromCLob;
@@ -2363,11 +2391,11 @@ begin
     DateFromTimeStamp(PZTimeStamp(DataAddr)^, Result)
   else if FSQLDataType = stString then begin
     if not TryRawToDate(DataAddr^, Length(RawByteString(DataAddr^)),
-       {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, Result) then
+       GetDateFormat, Result) then
       raise CreateConversionError(stString, stDate);
   end else if FSQLDataType = stUnicodeString then begin
     if not TryUniToDate(DataAddr^, Length(UnicodeString(DataAddr^)),
-       {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, Result) then
+       GetDateFormat, Result) then
       raise CreateConversionError(stUnicodeString, stDate);
   end else DecodeDateTimeToDate(GetAsDoubles(Index), Result);
 end;
@@ -2390,11 +2418,11 @@ begin
     TimeFromTimestamp(PZTimestamp(DataAddr)^, Result)
   else if FSQLDataType = stString then begin
     if not TryRawToTime(DataAddr^, Length(RawByteString(DataAddr^)),
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, Result) then
+      GetTimeFormat, Result) then
         raise CreateConversionError(stString, stTime);
   end else if FSQLDataType = stUnicodeString then begin
     if not TryUniToTime(DataAddr^, Length(UnicodeString(DataAddr^)),
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, Result) then
+      GetTimeFormat, Result) then
         raise CreateConversionError(stUnicodeString, stTime);
   end else DecodeDateTimeToTime(GetAsDoubles(Index), Result);
 end;
@@ -2419,11 +2447,11 @@ begin
     TimeStampFromTime(PZTime(DataAddr)^, Result)
   else if FSQLDataType = stString then begin
     if not TryRawToTimestamp(DataAddr^, Length(RawByteString(DataAddr^)),
-       {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat, Result) then
+       GetDateTimeFormat, Result) then
       raise CreateConversionError(stString, stTimestamp);
   end else if FSQLDataType = stUnicodeString then begin
     if not TryUniToTimestamp(DataAddr^, Length(UnicodeString(DataAddr^)),
-       {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat, Result) then
+       GetDateTimeFormat, Result) then
       raise CreateConversionError(stUnicodeString, stTimestamp);
   end else DecodeDateTimeToTimestamp(GetAsDoubles(Index), Result);
 end;
@@ -2526,6 +2554,7 @@ procedure TZParam.InternalSetAsRawByteString(DataAddr: PPointer;
 var P: PAnsiChar;
     L: LengthInt;
     DestCP: Word;
+    TS: TZTimeStamp;
   procedure ConvertRawToCLobVariable(const Value: RawByteString; CodePage: Word);
   var Lob: IZCLob;
       P: PAnsiChar;
@@ -2586,12 +2615,24 @@ begin
     stDouble: RawToFloat(P, AnsiChar(FDecimalSeperator), PDouble(DataAddr)^);
     stCurrency: RawToFloat(P, AnsiChar(FDecimalSeperator), PCurrency(DataAddr)^);
     stBigDecimal: PBCD(DataAddr)^ := RawToBCD(P, L);
-    stDate: if not ZSysUtils.TryRawToDate(P, L, {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, PZDate(DataAddr)^) then
-              goto jmpFail;
-    stTime: if not ZSysUtils.TryRawToTime(P, L, {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, PZTime(DataAddr)^) then
-              goto jmpFail;
-    stTimeStamp: if not ZSysUtils.TryRawToTimestamp(P, L, {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat, PZTimestamp(DataAddr)^) then
-              goto jmpFail;
+    stDate: if not ZSysUtils.TryRawToDate(P, L, GetDateFormat, PZDate(DataAddr)^) then
+              if ZSysUtils.TryRawToTimeStamp(P, L, GetDateTimeFormat, TS{%H-}) then begin
+                PZDate(DataAddr)^.Year := TS.Year;
+                PZDate(DataAddr)^.Month := TS.Month;
+                PZDate(DataAddr)^.Day := TS.Day;
+                PZDate(DataAddr)^.IsNegative := TS.IsNegative;
+              end
+              else
+                goto jmpFail;
+    stTime: if not ZSysUtils.TryRawToTime(P, L, GetTimeFormat, PZTime(DataAddr)^) then
+              if ZSysUtils.TryRawToTimeStamp(P, L, GetDateTimeFormat, TS) then begin
+                PZTime(DataAddr)^ := PZTime(@TS.Hour)^;
+                PZTime(DataAddr)^.IsNegative := False;
+              end
+              else
+                goto jmpFail;
+    stTimestamp: if not ZSysUtils.TryRawToTimeStamp(P, L, GetDateTimeFormat, PZTimeStamp(DataAddr)^) then
+                goto jmpFail;
     stGUID: if (L = 36) or (L = 38) then
               ZSysUtils.ValidGUIDToBinary(P, @PGUID(DataAddr)^.D1)
             else goto jmpFail;
@@ -2624,6 +2665,7 @@ procedure TZParam.InternalSetAsUnicodeString(DataAddr: PPointer;
   IsNullAddr: PBoolean; const Value: UnicodeString);
 var P: PWidechar;
     L: NativeUint;
+    TS: TZTimeStamp;
     procedure SetAsRaw;
     var CP: Word;
     begin
@@ -2662,9 +2704,23 @@ begin
     stDouble: UnicodeToFloat(P, WideChar(FDecimalSeperator), PDouble(DataAddr)^);
     stCurrency: UnicodeToFloat(P, WideChar(FDecimalSeperator), PCurrency(DataAddr)^);
     stBigDecimal: if not TryUniToBCD(P, L, PBCD(DataAddr)^, '.') then goto jmpErr;
-    stDate: if not TryUniToDate(P, L, {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, PZDate(DataAddr)^) then goto jmpErr;
-    stTime: if not TryUniToTime(P, L, {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, PZTime(DataAddr)^) then goto jmpErr;
-    stTimestamp: if not TryUniToTimeStamp(P, L, {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongDateFormat, PZTimeStamp(DataAddr)^) then goto jmpErr;
+    stDate: if not ZSysUtils.TryUniToDate(P, L, GetDateFormat, PZDate(DataAddr)^) then
+              if ZSysUtils.TryUniToTimeStamp(P, L, GetDateTimeFormat, TS{%H-}) then begin
+                PZDate(DataAddr)^.Year := TS.Year;
+                PZDate(DataAddr)^.Month := TS.Month;
+                PZDate(DataAddr)^.Day := TS.Day;
+                PZDate(DataAddr)^.IsNegative := TS.IsNegative;
+              end
+              else
+                goto jmpErr;
+    stTime: if not ZSysUtils.TryUniToTime(P, L, GetTimeFormat, PZTime(DataAddr)^) then
+              if ZSysUtils.TryUniToTimeStamp(P, L, GetDateTimeFormat, TS) then begin
+                PZTime(DataAddr)^ := PZTime(@TS.Hour)^;
+                PZTime(DataAddr)^.IsNegative := False;
+              end
+              else
+                goto jmpErr;
+    stTimestamp: if not TryUniToTimeStamp(P, L, GetDateTimeFormat, PZTimeStamp(DataAddr)^) then goto jmpErr;
     stGUID: ZSysUtils.ValidGUIDToBinary(P, @TGUIDDynArray(FData.pvDynArray.VArray)[Index].D1);
     stString: SetAsRaw;
     stUnicodeString: UnicodeString(DataAddr^) := Value;
@@ -3883,7 +3939,7 @@ var DT: TDateTime;
       CP: Word;
   begin
     L := DateToRaw(Value.Year, Value.Month, Value.Day, @Buf[0],
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, False, Value.IsNegative);
+      GetDateFormat, False, Value.IsNegative);
     R := '';
     CP := GetDefaultRawCP;
     ZSetString(PAnsiChar(@Buf[0]), L, R{$IFDEF WITH_RAWBYTESTRING}, CP{$ENDIF});
@@ -3895,7 +3951,7 @@ var DT: TDateTime;
       U: UnicodeString;
   begin
     L := DateToUni(Value.Year, Value.Month, Value.Day, @Buf[0],
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.ShortDateFormat, False, Value.IsNegative);
+      GetDateFormat, False, Value.IsNegative);
     U := '';
     System.SetString(U, PWideChar(@Buf[0]), L);
     InternalSetAsUnicodeString(DataAddr, IsNullAddr, U);
@@ -3935,7 +3991,7 @@ var DT: TDateTime;
       CP: Word;
   begin
     L := TimeToRaw(Value.Hour, Value.Minute, Value.Second, Value.Fractions, @Buf[0],
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, False, Value.IsNegative);
+      GetTimeFormat, False, Value.IsNegative);
     R := '';
     CP := GetDefaultRawCP;
     ZSetString(PAnsiChar(@Buf[0]), L, R{$IFDEF WITH_RAWBYTESTRING}, CP{$ENDIF});
@@ -3947,7 +4003,7 @@ var DT: TDateTime;
       U: UnicodeString;
   begin
     L := TimeToUni(Value.Hour, Value.Minute, Value.Second, Value.Fractions, @Buf[0],
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, False, Value.IsNegative);
+      GetTimeFormat, False, Value.IsNegative);
     U := '';
     System.SetString(U, PWideChar(@Buf[0]), L);
     InternalSetAsUnicodeString(DataAddr, IsNullAddr, U);
@@ -3988,7 +4044,7 @@ var DT: TDateTime;
   begin
     L := DateTimeToRaw(Value.Year, Value.Month, Value.Day, Value.Hour, Value.Minute,
       Value.Second, Value.Fractions, @Buf[0],
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, False, Value.IsNegative);
+      GetTimeFormat, False, Value.IsNegative);
     R := '';
     CP := GetDefaultRawCP;
     ZSetString(PAnsiChar(@Buf[0]), L, R{$IFDEF WITH_RAWBYTESTRING}, CP{$ENDIF});
@@ -4001,7 +4057,7 @@ var DT: TDateTime;
   begin
     L := DateTimeToUni(Value.Year, Value.Month, Value.Day, Value.Hour, Value.Minute,
       Value.Second, Value.Fractions, @Buf[0],
-      {$IFDEF WITH_FORMATSETTINGS}FormatSettings{$ELSE}SysUtils{$ENDIF}.LongTimeFormat, False, Value.IsNegative);
+      GetTimeFormat, False, Value.IsNegative);
     U := '';
     System.SetString(U, PWideChar(@Buf[0]), L);
     InternalSetAsUnicodeString(DataAddr, IsNullAddr, U);
