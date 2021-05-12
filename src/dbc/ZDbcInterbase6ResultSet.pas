@@ -1810,7 +1810,8 @@ end;
 procedure TZInterbase6XSQLDAResultSet.RegisterCursor;
 begin
   FIBTransaction := FIBConnection.GetActiveTransaction;
-  FIBTransaction.RegisterOpencursor(IZResultSet(TransactionResultSet));
+  if TransactionResultSet <> nil then 
+    FIBTransaction.RegisterOpencursor(IZResultSet(TransactionResultSet));
 end;
 
 procedure TZInterbase6XSQLDAResultSet.ResetCursor;
@@ -1834,7 +1835,8 @@ end;
 
 procedure TZInterbase6XSQLDAResultSet.DeRegisterCursor;
 begin
-  FIBTransaction.DeRegisterOpencursor(IZResultSet(TransactionResultSet));
+  if TransactionResultSet <> nil then 
+    FIBTransaction.DeRegisterOpencursor(IZResultSet(TransactionResultSet));
   FIBTransaction := nil;
 end;
 
