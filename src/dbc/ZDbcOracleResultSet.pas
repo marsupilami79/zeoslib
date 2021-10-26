@@ -2661,6 +2661,7 @@ var
     Statement.QueryInterface(IZLoggingObject, iLO);
     DriverManager.LogMessage(lcExecPrepStmt,iLO);
   end;
+label LogSuccess;  //ugly but faster and no double code
 label Success;  //ugly but faster and no double code
 begin
   { Checks for maximum row. }
@@ -2676,7 +2677,10 @@ begin
       { Logging Execution }
       if DriverManager.HasLoggingListener then
         LogExecution;
-      goto success; //skip next if's
+      if Status = OCI_SUCCESS Then
+        goto success //skip next if's
+      Else
+        goto LogSuccess;
     end;
   end else if Integer(FCurrentRowBufIndex) < FMaxBufIndex then begin
     Inc(FCurrentRowBufIndex);
@@ -2690,7 +2694,10 @@ begin
     FCurrentRowBufIndex := 0; //reset
     if Status in [OCI_SUCCESS, OCI_SUCCESS_WITH_INFO] then begin
       FMaxBufIndex := FIteration -1;
-      goto success;
+      if Status = OCI_SUCCESS Then
+        goto success //skip next if's
+      Else
+        goto LogSuccess;
     end;
   end;
 
@@ -2706,6 +2713,8 @@ begin
       DriverManager.LogMessage(lcFetchDone, IZLoggingObject(FWeakIZLoggingObjectPtr));
     Exit;
   end;
+
+LogSuccess:
   FOracleConnection.HandleErrorOrWarning(FOCIError, status, lcFetch,
     'FETCH ROW', Self);
 
