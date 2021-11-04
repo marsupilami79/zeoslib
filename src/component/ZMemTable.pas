@@ -550,6 +550,7 @@ Var
  a, b, len, ftype, fsize: Integer;
  fname: String;
  buf: {$IFDEF WITH_TVALUEBUFFER}TValueBuffer{$ELSE}Pointer{$ENDIF};
+ ms: TMemoryStream;
 Begin
  Self.CheckInactive;
 
@@ -578,20 +579,34 @@ Begin
 
      For b := 0 To Self.FieldCount - 1 Do
      Begin
-       {$IFDEF WITH_TVALUEBUFFER}
-       SetLength(buf, ReadInt);
-       AStream.Read(buf[0], Length(buf));
-       Self.Fields[b].SetData(buf);
-       {$ELSE}
-       fsize := ReadInt;
-       GetMem(buf, fsize);
-       Try
-         AStream.Read(buf, fsize);
+       If Self.Fields[b] Is TBlobField Then
+       Begin
+         ms := TMemoryStream.Create;
+         Try
+           ms.CopyFrom(AStream, ReadInt);
+           ms.Position := 0;
+           (Self.Fields[b] As TBlobField).LoadFromStream(ms);
+         Finally
+           FreeAndNil(ms);
+         End;
+       End
+       Else
+       Begin
+         {$IFDEF WITH_TVALUEBUFFER}
+         SetLength(buf, ReadInt);
+         AStream.Read(buf[0], Length(buf));
          Self.Fields[b].SetData(buf);
-       Finally
-         FreeMem(buf);
+         {$ELSE}
+         fsize := ReadInt;
+         GetMem(buf, fsize);
+         Try
+           AStream.Read(buf, fsize);
+           Self.Fields[b].SetData(buf);
+         Finally
+           FreeMem(buf);
+         End;
+         {$ENDIF}
        End;
-       {$ENDIF}
      End;
 
      Self.Post;
@@ -663,6 +678,7 @@ Var
  bm: TBookMark;
  a{{$IFDEF WITH_TVALUEBUFFER}{, b{$ENDIF}: Integer;
  buf: {$IFDEF WITH_TVALUEBUFFER}TValueBuffer{$ELSE}Pointer{$ENDIF};
+ ms: TMemoryStream;
 Begin
  Self.CheckActive;
 
@@ -689,28 +705,43 @@ Begin
      Begin
        For a := 0 To Self.FieldCount - 1 Do
        Begin
-         {$IFDEF WITH_TVALUEBUFFER}
-         SetLength(buf, Self.Fields[a].DataSize);
-         Self.Fields[a].GetData(buf);
-//         If buf[High(buf)] = 0 Then
-//           For b := High(buf) - 1 DownTo Low(buf) Do
-//             If buf[b] <> 0 Then
-//             Begin
-//               SetLength(buf, b + 1);
-//               Break;
-//             End;
-         WriteInt(Length(buf));
-         AStream.Write(buf, Length(buf));
-         {$ELSE}
-         GetMem(buf, Self.Fields[a].DataSize);
-         Try
+         If Self.Fields[a] Is TBlobField Then
+         Begin
+           ms := TMemoryStream.Create;
+           Try
+             (Self.Fields[a] As TBlobField).SaveToStream(ms);
+             ms.Position := 0;
+             WriteInt(ms.Size);
+             AStream.CopyFrom(ms);
+           Finally
+             FreeAndNil(ms);
+           End;
+         End
+         Else
+         Begin
+           {$IFDEF WITH_TVALUEBUFFER}
+           SetLength(buf, Self.Fields[a].DataSize);
            Self.Fields[a].GetData(buf);
-           WriteInt(Self.Fields[a].DataSize);
+//           If buf[High(buf)] = 0 Then
+//             For b := High(buf) - 1 DownTo Low(buf) Do
+//               If buf[b] <> 0 Then
+//               Begin
+//                 SetLength(buf, b + 1);
+//                 Break;
+//               End;
+           WriteInt(Length(buf));
            AStream.Write(buf, Length(buf));
-         Finally
-           FreeMem(buf);
+           {$ELSE}
+           GetMem(buf, Self.Fields[a].DataSize);
+           Try
+             Self.Fields[a].GetData(buf);
+             WriteInt(Self.Fields[a].DataSize);
+             AStream.Write(buf, Length(buf));
+           Finally
+             FreeMem(buf);
+           End;
+           {$ENDIF}
          End;
-         {$ENDIF}
        End;
 
        Self.Next;
