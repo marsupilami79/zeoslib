@@ -130,6 +130,8 @@ type
   TZMemTable = class(TZAbstractMemTable)
   public
     Destructor Destroy; Override;
+  protected
+    Function CallInheritedInternalPost: Boolean; Override;
   published
     property IndexFieldNames; {bangfauzan addition}
   end;
@@ -141,6 +143,11 @@ implementation
 
 { TZMemTable }
 
+Function TZMemTable.CallInheritedInternalPost: Boolean;
+Begin
+  Result := True;
+End;
+
 Destructor TZMemTable.Destroy;
 Begin
   If Self.Active Then
@@ -149,5 +156,3 @@ Begin
 End;
 
 end.
-
-

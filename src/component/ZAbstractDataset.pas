@@ -147,6 +147,7 @@ type
   {$ENDIF}
     procedure RegisterDetailDataSet(Value: TZAbstractRWDataSet; CachedUpdates: Boolean);
     procedure DisposeCachedUpdates;
+    function CallInheritedInternalPost: Boolean; Virtual;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -509,8 +510,7 @@ var
   {$ENDIF}
   I, j: Integer;
 begin
-  //inherited;  //AVZ - Firebird defaults come through when this is commented out
-
+  If CallInheritedInternalPost Then inherited;  //AVZ - Firebird defaults come through when this is commented out
 
   if not GetActiveBuffer(RowBuffer) then
     raise EZDatabaseError.Create(SInternalError);
@@ -690,6 +690,11 @@ begin
   if (CachedResultSet <> nil) and CachedResultSet.IsPendingUpdates then
     CachedResultSet.DisposeCachedUpdates;
 end;
+
+Function TZAbstractRWDataSet.CallInheritedInternalPost: Boolean;
+Begin
+  Result := False;
+End;
 
 {**
   Cancels all cached updates and clears the buffer.
