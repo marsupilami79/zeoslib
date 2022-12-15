@@ -368,13 +368,18 @@ begin
 end;
 
 procedure TZAbstractRWDataSet.InternalOpen;
+{$IF DEFINED(ENABLE_ORACLE) OR DEFINED(ENABLE_POSTGRESQL) OR DEFINED(ENABLE_INTERBASE) OR DEFINED(ENABLE_FIREBIRD)}
 var Value: String;
+{$IFEND}
 begin
+  {$IF DEFINED(ENABLE_ORACLE) OR DEFINED(ENABLE_POSTGRESQL) OR DEFINED(ENABLE_INTERBASE) OR DEFINED(ENABLE_FIREBIRD)}
   if doCheckRequired in Options then begin
     Value := Properties.Values[DSProps_InsertReturningFields];
     if Value <> '' then
       FInsertReturningFields := ExtractFields(Value, [';', ',']);
   end;
+  {$IFEND}
+
   inherited InternalOpen;
 end;
 
