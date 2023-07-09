@@ -703,6 +703,7 @@ var
   pCancel: PGCancel;
   L: NativeUInt;
   P: PAnsiChar;
+  LogMsg : SQLString;
 begin
   {.$MESSAGE '.AbortOperation with PostgreSQL is untested and might cause unexpected results!'}
   // https://www.postgresql.org/docs/9.2/libpq-cancel.html
@@ -722,11 +723,11 @@ begin
       then Result := 0
       else begin
         {$IFDEF UNICODE}
-        PRawToUnicode(P,L,ConSettings.ClientCodePage.CP, FLogMessage);
+        PRawToUnicode(P,L,ConSettings.ClientCodePage.CP, LogMsg);
         {$ELSE}
-        ZSetString(P, L, FLogMessage);
+        ZSetString(P, L, LogMsg);
         {$ENDIF}
-        HandleErrorOrWarning(PGRES_FATAL_ERROR, lcOther, FLogMessage, nil, Self);
+        HandleErrorOrWarning(PGRES_FATAL_ERROR, lcOther, LogMsg, Self, nil);
       end;
     end;
   finally
