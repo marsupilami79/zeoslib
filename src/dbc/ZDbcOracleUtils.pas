@@ -201,8 +201,8 @@ type
     Scale:     sb1; //field.scale used 4 out params
     ColType:   TZSQLType; //Zeos SQLType
     Data: TBytes;
-    DataIndicators:  TArray<sb2>;
-    DataLengths:    TArray<ub2>;
+    DataIndicators:  Array of sb2;
+    DataLengths:     Array of ub2;
   end;
 
   TZSQLVarDynArray = Array of TZSQLVar;
