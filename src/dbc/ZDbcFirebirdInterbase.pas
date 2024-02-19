@@ -4585,7 +4585,7 @@ var
   PStmts, PResult, P: PAnsiChar;
   TypeToken: PRawByteString;
   procedure ComposeTypeTokens;
-  var TypeToken: PRawByteString;
+  var TypeToken: RawByteString;
     ParamIndex, j: Cardinal;
     SQLWriter: TZRawSQLStringWriter;
     CodePageInfo: PZCodePage;
@@ -4595,70 +4595,71 @@ var
     Try
       {$R-}
       for ParamIndex := 0 to Cardinal(BindList.Count-1) do with FInParamDescripors[ParamIndex] do begin
-        TypeToken := @PZIB_FBBindValue(BindList[ParamIndex]).TypeToken;
+        // TypeToken := @PZIB_FBBindValue(BindList[ParamIndex]).TypeToken;
       {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
         case sqltype and not (1) of
           SQL_VARYING, SQL_TEXT:
             begin
               CodePageInfo := PlainDriver.ValidateCharEncoding(SqlSubType and 255);
-              SQLWriter.AddText(' VARCHAR(', TypeToken^);
+              SQLWriter.AddText(' VARCHAR(', TypeToken);
               J := sqllen - Byte(CodePageInfo.CharWidth);
-              SQLWriter.AddOrd(J div Byte(CodePageInfo.CharWidth), TypeToken^);
-              SQLWriter.AddText(') CHARACTER SET ', TypeToken^);
-              SQLWriter.{$IFDEF UNICODE}AddAscii7UTF16Text{$ELSE}AddText{$ENDIF}(CodePageInfo.Name, TypeToken^);
-              SQLWriter.AddText('=?', TypeToken^);
+              SQLWriter.AddOrd(J div Byte(CodePageInfo.CharWidth), TypeToken);
+              SQLWriter.AddText(') CHARACTER SET ', TypeToken);
+              SQLWriter.{$IFDEF UNICODE}AddAscii7UTF16Text{$ELSE}AddText{$ENDIF}(CodePageInfo.Name, TypeToken);
+              SQLWriter.AddText('=?', TypeToken);
             end;
-          SQL_DOUBLE, SQL_D_FLOAT: SQLWriter.AddText(' DOUBLE PRECISION=?', TypeToken^);
-          SQL_FLOAT: SQLWriter.AddText(' FLOAT=?', TypeToken^);
+          SQL_DOUBLE, SQL_D_FLOAT: SQLWriter.AddText(' DOUBLE PRECISION=?', TypeToken);
+          SQL_FLOAT: SQLWriter.AddText(' FLOAT=?', TypeToken);
           SQL_LONG:
             if sqlscale = 0
-            then SQLWriter.AddText(' INTEGER=?',TypeToken^)
+            then SQLWriter.AddText(' INTEGER=?',TypeToken)
             else begin
               if SqlSubType = RDB_NUMBERS_NUMERIC
-              then SQLWriter.AddText(' NUMERIC(9,', TypeToken^)
-              else SQLWriter.AddText(' DECIMAL(9,', TypeToken^);
-              SQLWriter.AddOrd(Cardinal(-sqlscale), TypeToken^);
-              SQLWriter.AddText(')=?', TypeToken^);
+              then SQLWriter.AddText(' NUMERIC(9,', TypeToken)
+              else SQLWriter.AddText(' DECIMAL(9,', TypeToken);
+              SQLWriter.AddOrd(Cardinal(-sqlscale), TypeToken);
+              SQLWriter.AddText(')=?', TypeToken);
             end;
           SQL_SHORT:
             if sqlscale = 0
-            then SQLWriter.AddText(' SMALLINT=?',TypeToken^)
+            then SQLWriter.AddText(' SMALLINT=?',TypeToken)
             else begin
               if SqlSubType = RDB_NUMBERS_NUMERIC
-              then SQLWriter.AddText(' NUMERIC(4,', TypeToken^)
-              else SQLWriter.AddText(' DECIMAL(4,', TypeToken^);
-              SQLWriter.AddOrd(Cardinal(-sqlscale), TypeToken^);
-              SQLWriter.AddText(')=?', TypeToken^);
+              then SQLWriter.AddText(' NUMERIC(4,', TypeToken)
+              else SQLWriter.AddText(' DECIMAL(4,', TypeToken);
+              SQLWriter.AddOrd(Cardinal(-sqlscale), TypeToken);
+              SQLWriter.AddText(')=?', TypeToken);
             end;
-          SQL_TIMESTAMP: SQLWriter.AddText(' TIMESTAMP=?', TypeToken^);
+          SQL_TIMESTAMP: SQLWriter.AddText(' TIMESTAMP=?', TypeToken);
           SQL_BLOB: if sqlsubtype = isc_blob_text
-            then SQLWriter.AddText(' BLOB SUB_TYPE TEXT=?',TypeToken^)
-            else SQLWriter.AddText(' BLOB=?',TypeToken^);
+            then SQLWriter.AddText(' BLOB SUB_TYPE TEXT=?',TypeToken)
+            else SQLWriter.AddText(' BLOB=?',TypeToken);
           //SQL_ARRAY                      = 540;
           //SQL_QUAD                       = 550;
-          SQL_TYPE_TIME: SQLWriter.AddText(' TIME=?', TypeToken^);
-          SQL_TYPE_DATE: SQLWriter.AddText(' DATE=?', TypeToken^);
+          SQL_TYPE_TIME: SQLWriter.AddText(' TIME=?', TypeToken);
+          SQL_TYPE_DATE: SQLWriter.AddText(' DATE=?', TypeToken);
           SQL_INT64: // IB7
             if sqlscale = 0
-            then SQLWriter.AddText(' BIGINT=?',TypeToken^)
+            then SQLWriter.AddText(' BIGINT=?',TypeToken)
             else begin
               if SqlSubType = RDB_NUMBERS_NUMERIC
-              then SQLWriter.AddText(' NUMERIC(18,', TypeToken^)
-              else SQLWriter.AddText(' DECIMAL(18,', TypeToken^);
-              SQLWriter.AddOrd(Cardinal(-sqlscale), TypeToken^);
-              SQLWriter.AddText(')=?', TypeToken^);
+              then SQLWriter.AddText(' NUMERIC(18,', TypeToken)
+              else SQLWriter.AddText(' DECIMAL(18,', TypeToken);
+              SQLWriter.AddOrd(Cardinal(-sqlscale), TypeToken);
+              SQLWriter.AddText(')=?', TypeToken);
             end;
           SQL_BOOLEAN, SQL_BOOLEAN_FB{FB30}:
-             SQLWriter.AddText(' BOOLEAN=?',TypeToken^);
+             SQLWriter.AddText(' BOOLEAN=?',TypeToken);
           SQL_NULL{FB25}:
-             SQLWriter.AddText(' CHAR(1)=?',TypeToken^);
+             SQLWriter.AddText(' CHAR(1)=?',TypeToken);
           else raise ZDbcUtils.CreateUnsupportedParameterTypeException(ParamIndex, stUnknown);
         end;
-        SQLWriter.Finalize(TypeToken^);
+        SQLWriter.Finalize(TypeToken);
+        PZIB_FBBindValue(BindList[ParamIndex]).TypeToken:= TypeToken;
         {$IFDEF WITH_INLINE}
-        FTypeTokensLen := FTypeTokensLen + Cardinal(Length(TypeToken^));
+        FTypeTokensLen := FTypeTokensLen + Cardinal(Length(TypeToken));
         {$ELSE}
-        FTypeTokensLen := FTypeTokensLen + Cardinal(PLengthInt(NativeUInt(TypeToken^) - StringLenOffSet)^);
+        FTypeTokensLen := FTypeTokensLen + Cardinal(PLengthInt(NativeUInt((@TypeToken)^) - StringLenOffSet)^);
         {$ENDIF}
       end;
     Finally
