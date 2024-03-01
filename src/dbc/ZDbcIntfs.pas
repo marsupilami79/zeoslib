@@ -5000,11 +5000,9 @@ begin
 
   // HostName/Port
   if HostName <> '' then
-  begin
     Result := Result + HostName;
-    if Port <> 0 then
-      Result := Result + ':' + ZFastCode.IntToStr(Port);
-  end;
+  if Port <> 0 then
+    Result := Result + ':' + ZFastCode.IntToStr(Port);
 
   // Database
   if Database <> '' then
