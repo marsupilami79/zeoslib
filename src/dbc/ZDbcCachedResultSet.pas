@@ -2369,7 +2369,7 @@ begin
       end;
     end;
   end;
-  FRowsList.Add(NewRowAccessor.RowBuffer);
+  FRowsList.Add(FRowAccessor.RowBuffer);
   FRowAccessor.ClearBuffer(FInsertedRow, True);
 
   LastRowNo := FRowsList.Count;
