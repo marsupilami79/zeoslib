@@ -949,7 +949,7 @@ begin
       raise EZSQLException.Create('Could not determine a valid statement!');
     for I := 0 to Config.StatementCount - 1 do begin
       if (FStmts[UpdateType].Count <= i) or not (FStmts[UpdateType][i].QueryInterface(IZPreparedStatement, Statement) = S_OK) or
-         Statement.IsClosed or (OrigStmt.GetParameters.Text <> Statement.GetParameters.Text) then begin
+         Statement.IsClosed or (OrigStmt.GetParameters.Text <> Statement.GetParameters.Text) or (Config.Statements[I].SQL <> Statement.GetSQL) then begin
         Statement := OrigStmt.GetConnection.PrepareStatementWithParams(
           Config.Statements[I].SQL, OrigStmt.GetParameters);
         if (FStmts[UpdateType].Count <= i)
