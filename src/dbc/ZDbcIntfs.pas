@@ -4886,17 +4886,84 @@ begin
   end;
 end;
 
+function PercentEncode(const S: string): string;
+const
+  UnreservedChars = [
+    Ord('A')..Ord('Z'),
+    Ord('a')..Ord('z'),
+    Ord('0')..Ord('9'),
+    Ord('-'), Ord('_'), Ord('.'), Ord('~')];
+var
+  I: Integer;
+  C: Char;
+begin
+  Result := '';
+  for I := 1 to Length(S) do
+  begin
+    C := S[I];
+    if Ord(C) in UnreservedChars then
+      Result := Result + C
+    else if Ord(C) <= 127 then
+      Result := Result + '%' + IntToHex(Ord(C), 2)
+    else
+      Result := Result + '%u' + IntToHex(Ord(C), 4);
+  end;
+end;
+
+function PercentDecode(const S: string): string;
+var
+  I: Integer;
+  HexStr: string;
+  CodePoint: Integer;
+begin
+  Result := '';
+  I := 1;
+  while I <= Length(S) do
+  begin
+    if (I < Length(S) - 1) and (S[I] = '%') then
+    begin
+      if (I < Length(S) - 4) and (S[I + 1] = 'u') then
+      begin
+        HexStr := Copy(S, I + 2, 4);
+        if TryStrToInt('$' + HexStr, CodePoint) then
+        begin
+          Result := Result + Char(CodePoint);
+          Inc(I, 5);
+        end
+        else
+          Result := Result + S[I];
+      end
+      else
+      begin
+        HexStr := Copy(S, I + 1, 2);
+        if TryStrToInt('$' + HexStr, CodePoint) then
+        begin
+          Result := Result + Char(CodePoint);
+          Inc(I, 2);
+        end
+        else
+          Result := Result + S[I];
+      end;
+    end
+    else
+      Result := Result + S[I];
+    Inc(I);
+  end;
+end;
+
 // escape the ';' char to #9 and LineEnding to ';'
 function Escape(const S: string): string; {$IFDEF WITH_INLINE}inline;{$ENDIF}
 begin
   Result := ReplaceChar(';', #9, S);
   Result := StringReplace(Result, LineEnding, ';', [rfReplaceAll]);
+  Result := PercentEncode(Result);
 end;
 
 // unescape the ';' to LineEnding and #9 char to ';'
 function UnEscape(const S: string): string; {$IFDEF WITH_INLINE}inline;{$ENDIF}
 begin
-  Result := StringReplace(S, ';', LineEnding, [rfReplaceAll]);
+  Result := PercentDecode(S);
+  Result := StringReplace(Result, ';', LineEnding, [rfReplaceAll]);
   Result := ReplaceChar(#9, ';', Result);
 end;
 
