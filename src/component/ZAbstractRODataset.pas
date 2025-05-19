@@ -571,6 +571,7 @@ type
 
     procedure FetchAll; virtual;  // added by Patyi
     procedure ExecSQL; virtual;
+    function MoveBy(Distance: Integer): Integer; override;
     function RowsAffected: LongInt;
     function ParamByName(const Value: string): {$IFNDEF DISABLE_ZPARAM}TZParam{$ELSE}TParam{$ENDIF};
 
@@ -4042,12 +4043,21 @@ begin
   if Active then
     UpdateCursorPos;
   Result := CurrentRow;
+end;
+
+function TZAbstractRODataset.MoveBy(Distance: Integer): Integer;
+begin
   //EH: load data chunked see https://sourceforge.net/p/zeoslib/tickets/399/
-  if not IsUniDirectional and not FLastRowFetched and
-    (CurrentRow = CurrentRows.Count) and (FFetchRow > 0) then begin
-    FetchRows(CurrentRows.Count+FFetchRow);
-    Resync([rmCenter]); //notify we've widened the records
+  if not IsUniDirectional and not FLastRowFetched and (FFetchRow > 0) Then
+  Begin
+    While (RecNo + Distance > CurrentRows.Count) Do
+    Begin
+      FetchRows(CurrentRows.Count+FFetchRow);
+      Resync([rmCenter]); //notify we've widened the records
+    End;
   end;
+
+  Result := inherited;
 end;
 
 {**
