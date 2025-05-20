@@ -571,7 +571,6 @@ type
 
     procedure FetchAll; virtual;  // added by Patyi
     procedure ExecSQL; virtual;
-    function MoveBy(Distance: Integer): Integer; override;
     function RowsAffected: LongInt;
     function ParamByName(const Value: string): {$IFNDEF DISABLE_ZPARAM}TZParam{$ELSE}TParam{$ENDIF};
 
@@ -2114,19 +2113,35 @@ end;
 function TZAbstractRODataset.FetchRows(RowCount: Integer): Boolean;
 begin
   if (CurrentRows.Count < RowCount) or (RowCount = 0) then
-    if FLastRowFetched
-    then Result := CurrentRows.Count >= RowCount
-    else begin
+    if FLastRowFetched then
+      Result := CurrentRows.Count >= RowCount
+    else
+    begin
       if Connection <> nil then
         Connection.ShowSQLHourGlass;
+
       try
-        if (RowCount = 0) then begin
+        if (RowCount = 0) then
+        begin
           while FetchOneRow do;
           Result := True;
-        end else begin
+        end
+        else
+        if FFetchRow = 0 then
+        begin
           while (CurrentRows.Count < RowCount) do
             if not FetchOneRow then
               Break;
+          Result := CurrentRows.Count >= RowCount;
+        end
+        else
+        begin
+          While (CurrentRows.Count < (RowCount Div FFetchRow + 1) * FFetchRow) Do
+          Begin
+            If Not FetchOneRow Then
+              Break;
+          End;
+
           Result := CurrentRows.Count >= RowCount;
         end;
       finally
@@ -2134,7 +2149,8 @@ begin
           Connection.HideSQLHourGlass;
       end;
     end
-  else Result := True;
+  else
+    Result := True;
 end;
 
 {**
@@ -4043,21 +4059,6 @@ begin
   if Active then
     UpdateCursorPos;
   Result := CurrentRow;
-end;
-
-function TZAbstractRODataset.MoveBy(Distance: Integer): Integer;
-begin
-  //EH: load data chunked see https://sourceforge.net/p/zeoslib/tickets/399/
-  if not IsUniDirectional and not FLastRowFetched and (FFetchRow > 0) Then
-  Begin
-    While (RecNo + Distance > CurrentRows.Count) Do
-    Begin
-      FetchRows(CurrentRows.Count+FFetchRow);
-      Resync([rmCenter]); //notify we've widened the records
-    End;
-  end;
-
-  Result := inherited;
 end;
 
 {**
