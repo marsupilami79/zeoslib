@@ -4419,7 +4419,7 @@ begin
         if DoFindParam
         then Param := Params.FindParam(ParamNamesArray[I])
         else Param := Params[i];
-        if (Param.ParamType <> ptUnknown) then begin
+        if Assigned(Param) and (Param.ParamType <> ptUnknown) then begin
           FHasOutParams := FHasOutParams or (Ord(Param.ParamType) >= Ord(ptOutput));
           Statement.RegisterParameter(i, ConvertDatasetToDbcType(Param.DataType),
             DatasetTypeToProcColDbc[Param.ParamType], Param.Name,
