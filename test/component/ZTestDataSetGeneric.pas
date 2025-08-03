@@ -3725,7 +3725,7 @@ begin
   // set value to DB table
   Connection.Connect;
   // only run this test on Firebird 2.5 up because the test requires the
-  // hexadecimal notation for “binary” strings introduced in that version.
+  // hexadecimal notation for Â“binaryÂ” strings introduced in that version.
   // Interbase does also not support a hexadecimal notation. See:
   // https://stackoverflow.com/questions/44348866/is-there-a-binary-literal-in-interbase
   DbInfo := nil;
@@ -4080,9 +4080,15 @@ begin
         WR.AddText('from high_load where hl_id >= :hl_id order by hl_id', SQL);
         WR.Finalize(SQL);
         RQuery.SQL.Text := SQL;
-        InternalTestBatchArrayDMLBinding(WQuery, RQuery, 0, 50, LastFieldIndices[i]);
-        InternalTestBatchArrayDMLBinding(WQuery, RQuery, 50, 20, LastFieldIndices[i]);
-        InternalTestBatchArrayDMLBinding(WQuery, RQuery, 70, 10, LastFieldIndices[i]);
+        try
+          InternalTestBatchArrayDMLBinding(WQuery, RQuery, 0, 50, LastFieldIndices[i]);
+          InternalTestBatchArrayDMLBinding(WQuery, RQuery, 50, 20, LastFieldIndices[i]);
+          InternalTestBatchArrayDMLBinding(WQuery, RQuery, 70, 10, LastFieldIndices[i]);
+        except
+          InternalTestBatchArrayDMLBinding(WQuery, RQuery, 0, 25, LastFieldIndices[i]);
+          InternalTestBatchArrayDMLBinding(WQuery, RQuery, 25, 10, LastFieldIndices[i]);
+          InternalTestBatchArrayDMLBinding(WQuery, RQuery, 35, 5, LastFieldIndices[i]);
+        end;
         WQuery.Params.BatchDMLCount := 0;
       end;
     finally
