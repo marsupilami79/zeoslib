@@ -2339,13 +2339,14 @@ end;
   The cursor must be on the insert row when this method is called.
 }
 procedure TZAbstractCachedResultSet.InsertRow;
-var TempRow: PZRowBuffer;
+var TempRow, NewRow : PZRowBuffer;
   Succeeded: Boolean;
 begin
   CheckUpdatable;
   { Creates a new row. }
   TempRow := FRowAccessor.RowBuffer;
   FRowAccessor.Alloc;
+  NewRow := FRowAccessor.RowBuffer;
   FRowAccessor.CopyFrom(FInsertedRow);
   FRowAccessor.RowBuffer^.UpdateType := utInserted;
   FRowAccessor.RowBuffer^.Index := GetNextRowIndex;
@@ -2357,6 +2358,7 @@ begin
     Succeeded := False;
     try
       PostUpdates;
+      FRowAccessor.RowBuffer := NewRow;
       Succeeded := True;
     finally //EH no reraising of an Exception required -> keep original stack frame i.e. MadExcept
       if not Succeeded then begin
