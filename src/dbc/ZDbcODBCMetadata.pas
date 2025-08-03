@@ -1842,8 +1842,16 @@ end;
 // Firebird requires it because it seems that the ODBC driver an give a string with #0 as a
 // result for the TABLE_CAT column.
 function TODBCDatabaseMetadataW.CleanupString(InStr: UnicodeString): UnicodeString;
+var
+  StrLen: NativeUInt;
 begin
-  If (Length(InStr) > 0) and (SysUtils.StrLen(PWideChar(InStr)) = 0) then
+  {$IFDEF WITH_WIDECHAR_STRLEN}
+  StrLen := SysUtils.StrLen(PWideChar(InStr));
+  {$ELSE}
+  StrLen := Length(PWideChar(InStr));
+  {$ENDIF}
+
+  If (Length(InStr) > 0) and (StrLen = 0) then
     Result := EmptyStr
   else
     Result := InStr;

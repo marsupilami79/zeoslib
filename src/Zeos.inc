@@ -175,6 +175,7 @@
     {$DEFINE VER150BELOW}                   //found in ZTestBugCompPostgreSql.pas
     {$DEFINE WITH_OVERLOAD_BUG}             //D7 Bug -> ambiguous overload error when both Func(Integer) and Func(Cardinal) exist and Func(a: Byte/Word) is called
     {$IF CompilerVersion >= 16} //Delphi 8+
+      {$DEFINE WITH_WIDECHAR_STRLEN}
       {$IF CompilerVersion >= 17} //Delphi 2005+
         {$DEFINE WITH_INLINE}          // compiler supports inline methodes
         {$DEFINE WITH_C5242_OR_C4963_INTERNAL_ERROR} //D2005..2009 Has an internal error with some inlined endian swap code.
