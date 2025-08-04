@@ -55,14 +55,14 @@ interface
 
 {$I ZDbc.inc}
 
-{$IFDEF ENABLE_PROXY} //if set we have an empty unit
+{$IFNDEF ZEOS_DISABLE_DUCKDB}
 uses
   Types, Classes, {$IFDEF MSEgui}mclasses,{$ENDIF} SysUtils,
   ZDbcIntfs, ZDbcMetadata, ZCompatibility, ZSelectSchema;
 
 type
 
-  {** Implements DBC Layer Proxy driver Database Information. }
+  {** Implements DBC Layer DuckDB driver Database Information. }
   TZDuckDBDatabaseInfo = class(TZAbstractDatabaseInfo)
   public
     // database/driver/server info:
@@ -225,26 +225,26 @@ type
 //    function EscapeString(const S: string): string; override;
     function UncachedGetTables(const Catalog: string; const SchemaPattern: string;
       const TableNamePattern: string; const Types: TStringDynArray): IZResultSet; override;
-    //function UncachedGetSchemas: IZResultSet; override;
+    function UncachedGetSchemas: IZResultSet; override;
     function UncachedGetCatalogs: IZResultSet; override;
-    //function UncachedGetTableTypes: IZResultSet; override;
+    function UncachedGetTableTypes: IZResultSet; override;
     function UncachedGetColumns(const Catalog: string; const SchemaPattern: string;
       const TableNamePattern: string; const ColumnNamePattern: string): IZResultSet; override;
     //function UncachedGetTablePrivileges(const Catalog: string; const SchemaPattern: string;
     //  const TableNamePattern: string): IZResultSet; override;
     //function UncachedGetColumnPrivileges(const Catalog: string; const Schema: string;
     //  const Table: string; const ColumnNamePattern: string): IZResultSet; override;
-    //function UncachedGetPrimaryKeys(const Catalog: string; const Schema: string;
-    //  const Table: string): IZResultSet; override;
-    //function UncachedGetImportedKeys(const Catalog: string; const Schema: string;
-    //  const Table: string): IZResultSet; override;
-    //function UncachedGetExportedKeys(const Catalog: string; const Schema: string;
-    //  const Table: string): IZResultSet; override;
-    //function UncachedGetCrossReference(const PrimaryCatalog: string; const PrimarySchema: string;
-    //  const PrimaryTable: string; const ForeignCatalog: string; const ForeignSchema: string;
-    //  const ForeignTable: string): IZResultSet; override;
-    //function UncachedGetIndexInfo(const Catalog: string; const Schema: string; const Table: string;
-    //  Unique: Boolean; Approximate: Boolean): IZResultSet; override;
+    function UncachedGetPrimaryKeys(const Catalog: string; const Schema: string;
+      const Table: string): IZResultSet; override;
+    function UncachedGetImportedKeys(const Catalog: string; const Schema: string;
+      const Table: string): IZResultSet; override;
+    function UncachedGetExportedKeys(const Catalog: string; const Schema: string;
+      const Table: string): IZResultSet; override;
+    function UncachedGetCrossReference(const PrimaryCatalog: string; const PrimarySchema: string;
+      const PrimaryTable: string; const ForeignCatalog: string; const ForeignSchema: string;
+      const ForeignTable: string): IZResultSet; override;
+    function UncachedGetIndexInfo(const Catalog: string; const Schema: string; const Table: string;
+      Unique: Boolean; Approximate: Boolean): IZResultSet; override;
     //function UncachedGetSequences(const Catalog: string; const SchemaPattern: string;
     //  const SequenceNamePattern: string): IZResultSet; override;
     //function UncachedGetTriggers(const Catalog: string; const SchemaPattern: string;
@@ -263,13 +263,13 @@ type
 //    function GetIdentifierConvertor: IZIdentifierConvertor; override;
  end;
 
-{$ENDIF ENABLE_PROXY} //if set we have an empty unit
+{$ENDIF ZEOS_DISABLE_DUCKDB} //if set we have an empty unit
 implementation
-{$IFDEF ENABLE_PROXY} //if set we have an empty unit
+{$IFNDEF ZEOS_DISABLE_DUCKDB}
 
 uses
   TypInfo,
-  ZFastCode, ZMessages, ZSysUtils, ZPlainProxyDriverIntf, ZDbcProxy, ZDbcProxyResultSet,
+  ZFastCode, ZMessages, ZSysUtils,
   ZDbcCachedResultSet, ZExceptions;
 
 { TZDuckDBDatabaseInfo }
@@ -425,7 +425,7 @@ end;
 }
 function TZDuckDBDatabaseInfo.StoresMixedCaseIdentifiers: Boolean;
 begin
-  Result := false;
+  Result := true;
 end;
 
 {**
@@ -1330,12 +1330,7 @@ function TZDuckDBDatabaseMetadata.UncachedGetTables(const Catalog: string;
   const SchemaPattern: string; const TableNamePattern: string;
   const Types: TStringDynArray): IZResultSet;
 var
-  //I: Integer;
-  //TableType, OrderBy,
-  TempIS, TempRes, SQL: string;
-  //UseSchemas: Boolean;
-  //LTypes: TStringDynArray;
-
+  SQL: string;
   TableNameCondition, SchemaCondition, CatalogCondition: string;
 begin
   Result := inherited UncachedGetTables(Catalog, SchemaPattern, TableNamePattern, Types);
@@ -1377,8 +1372,6 @@ begin
   (Result as IZVirtualResultSet).SetConcurrency(rcReadOnly);
 end;
 
-(*
-
 {**
   Gets the schema names available in this database.  The results
   are ordered by schema name.
@@ -1392,14 +1385,20 @@ end;
   schema name
 }
 function TZDuckDBDatabaseMetadata.UncachedGetSchemas: IZResultSet;
-var
-  Res: WideString;
 begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetSchemas;
-
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  Result := inherited UncachedGetSchemas;
+  (Result as IZVirtualResultSet).SetConcurrency(rcUpdatable);
+  with GetConnection.CreateStatement.ExecuteQuery('select distinct schema_name from information_schema.schemata order by schema_name') do begin
+    while Next do begin
+      Result.MoveToInsertRow;
+      Result.UpdateString(0, GetString(0));
+      Result.InsertRow;
+    end;
+  end;
+  (Result as IZVirtualResultSet).BeforeFirst;
+  (Result as IZVirtualResultSet).SetConcurrency(rcReadOnly);
 end;
-*)
+
 {**
   Gets the catalog names available in this database.  The results
   are ordered by catalog name.
@@ -1427,7 +1426,6 @@ begin
   (Result as IZVirtualResultSet).SetConcurrency(rcReadOnly);
 end;
 
-(*
 {**
   Gets the table types available in this database.  The results
   are ordered by table type.
@@ -1443,14 +1441,22 @@ end;
   table type
 }
 function TZDuckDBDatabaseMetadata.UncachedGetTableTypes: IZResultSet;
+const
+  TablesTypes: array [0..2] of RawByteString = ('BASE TABLE', 'VIEW', 'LOCAL TEMPORARY');
 var
-  Res: WideString;
+  I: Integer;
 begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetTableTypes;
-
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  Result := inherited UncachedGetTableTypes;
+  for I := Low(TablesTypes) to High(TablesTypes) do
+  begin
+    Result.MoveToInsertRow;
+    Result.UpdateRawByteString(TableTypeColumnTableTypeIndex, TablesTypes[I]);
+    Result.InsertRow;
+  end;
+  Result.BeforeFirst;
 end;
-*)
+
+
 {**
   Gets a description of table columns available in
   the specified catalog.
@@ -1545,13 +1551,31 @@ begin
   SchemaCondition := ConstructNameCondition(SchemaPattern,'information_schema.columns.table_schema');
   TableNameCondition := ConstructNameCondition(TableNamePattern,'information_schema.columns.table_name');
   ColumnNameCondition := ConstructNameCondition(ColumnNamePattern, 'information_schema.columns.column_name');
-  SQL :='SELECT * from information_schema.columns';
+  // Note that many of these values return null instead of real values...
+  SQL :=
+  'select ' +
+  'table_catalog, ' +
+  'table_schema, ' +
+  'table_name, ' +
+  'column_name, ' +
+  'ordinal_position, ' +
+  'column_default, ' +
+  'is_nullable, ' +
+  'data_type, ' +
+  'character_octet_length, ' +
+  'numeric_precision, ' +
+  'numeric_precision_radix, ' +
+  'numeric_scale, ' +
+  'is_identity, ' +
+  'true as is_updatable, ' +
+  'column_comment ' +
+  'from information_schema.columns';
   AddCondition(CatalogCondition);
   AddCondition(SchemaCondition);
   AddCondition(TableNameCondition);
   AddCondition(ColumnNameCondition);
-
   SQL := SQL + ' order by table_catalog, table_schema, table_name, ordinal_position';
+
   (Result as IZVirtualResultSet).SetConcurrency(rcUpdatable);
   DuckData := GetConnection.CreateStatement.ExecuteQuery(SQL);
   try
@@ -1577,11 +1601,11 @@ begin
       CopyData('numeric_precision_radix', 'NUM_PREC_RADIX', stInteger);
       CopyData('numeric_scale', 'DECIMAL_DIGITS', stInteger);
       CopyData('is_identity', 'AUTO_INCREMENT', stBoolean);
-      {if DuckData.IsNullByName('is_updatable') then begin
+      if DuckData.IsNullByName('is_updatable') then begin
         Result.UpdateNullByName('WRITABLE');
         Result.UpdateNullByName('DEFINITELYWRITABLE');
         Result.UpdateNullByName('READONLY')
-      end else} if DuckData.IsNullByName('is_updatable') or DuckData.GetBooleanByName('is_updatable') then begin
+      end else if DuckData.GetBooleanByName('is_updatable') then begin
         Result.UpdateBooleanByName('WRITABLE', true);
         Result.UpdateBooleanByName('DEFINITELYWRITABLE', true);
         Result.UpdateBooleanByName('READONLY', false);
@@ -1685,6 +1709,7 @@ begin
 
   Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
 end;
+*)
 
 {**
   Gets a description of a table's columns that are automatically
@@ -1758,11 +1783,72 @@ end;
 function TZDuckDBDatabaseMetadata.UncachedGetPrimaryKeys(const Catalog: string;
   const Schema: string; const Table: string): IZResultSet;
 var
-  Res: WideString;
-begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetPrimaryKeys(Catalog, Schema, Table);
+  SQL: string;
+  CatalogCondition: string;
+  SchemaCondition: string;
+  TableNameCondition: string;
+  DuckData: IZResultSet;
 
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  procedure CopyData(const Src, Dst: String; SqlType: TZSQLType);
+  begin
+    if DuckData.IsNullByName(Src) then
+      Result.UpdateNullByName(Dst)
+    else
+      case SqlType of
+        stBoolean: Result.UpdateBooleanByName(Dst, DuckData.GetBooleanByName(Src));
+        stInteger: Result.UpdateIntByName(Dst, DuckData.GetIntByName(Src));
+        stString: Result.UpdateStringByName(Dst, DuckData.GetStringByName(Src));
+        else
+          raise EZSQLException.Create('Cannot convert');
+      end;
+  end;
+
+begin
+  Result := inherited UncachedGetPrimaryKeys(Catalog, Schema, Table);
+
+  CatalogCondition := ConstructNameCondition(Catalog,'tc.constraint_catalog');
+  SchemaCondition := ConstructNameCondition(Schema ,'tc.constraint_schema');
+  TableNameCondition := ConstructNameCondition(Table,'tc.table_name');
+  SQL :=
+    'select ' +
+    '  tc.constraint_catalog table_cat, ' +
+    '  tc.constraint_schema table_schem, ' +
+    '  tc.table_name table_name, ' +
+    '  kcu.column_name column_name, ' +
+    '  kcu.ordinal_position key_seq, ' +
+    '  tc.constraint_name pk_name ' +
+    'from information_schema.table_constraints tc ' +
+    '  join information_schema.key_column_usage kcu on ' +
+    // These ones removed due to apparent driver error.
+    //    '    tc.constraint_catalog = kcu.constraint_catalog and ' +
+    //    '    tc.constraint_schema = kcu.constraint_schema and ' +
+    '    tc.constraint_name = kcu.constraint_name ' +
+    'where ' +
+    '  tc.constraint_type = ''PRIMARY KEY'' ' +
+    AppendCondition(CatalogCondition) + ' ' +
+    AppendCondition(SchemaCondition) + ' ' +
+    AppendCondition(TableNameCondition) + ' ' +
+    'order by ' +
+    '  kcu.ordinal_position';
+  (Result as IZVirtualResultSet).SetConcurrency(rcUpdatable);
+  DuckData := GetConnection.CreateStatement.ExecuteQuery(SQL);
+  try
+    while DuckData.Next do
+    begin
+      Result.MoveToInsertRow;
+      CopyData('table_cat', 'table_cat', stString);
+      CopyData('table_schem', 'table_schem', stString);
+      CopyData('table_name', 'table_name', stString);
+      CopyData('column_name', 'COLUMN_NAME', stString);
+      CopyData('key_seq', 'key_seq', stInteger);
+      CopyData('pk_name', 'pk_name', stString);
+      Result.InsertRow;
+    end;
+  finally
+    DuckData.Close;
+  end;
+  (Result as IZVirtualResultSet).BeforeFirst;
+  (Result as IZVirtualResultSet).SetConcurrency(rcReadOnly);
 end;
 
 {**
@@ -1832,14 +1918,11 @@ end;
   @return <code>ResultSet</code> - each row is a primary key column description
   @see #getExportedKeys
 }
+
 function TZDuckDBDatabaseMetadata.UncachedGetImportedKeys(const Catalog: string;
   const Schema: string; const Table: string): IZResultSet;
-var
-  Res: WideString;
 begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetImportedKeys(Catalog, Schema, Table);
-
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  Result := UncachedGetCrossReference('', '', '', Catalog, Schema, Table);
 end;
 
 {**
@@ -1911,12 +1994,8 @@ end;
 }
 function TZDuckDBDatabaseMetadata.UncachedGetExportedKeys(const Catalog: string;
   const Schema: string; const Table: string): IZResultSet;
-var
-  Res: WideString;
 begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetExportedKeys(Catalog, Schema, Table);
-
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  Result := UncachedGetCrossReference(Catalog, Schema, Table, '', '', '');
 end;
 
 {**
@@ -1998,11 +2077,107 @@ function TZDuckDBDatabaseMetadata.UncachedGetCrossReference(const PrimaryCatalog
   const PrimarySchema: string; const PrimaryTable: string; const ForeignCatalog: string;
   const ForeignSchema: string; const ForeignTable: string): IZResultSet;
 var
-  Res: WideString;
+  Len: NativeUInt;
+  SQL: string;
+  PKCatCondition, PKSchemaCondition, PKTableCondition: string;
+  FKCatCondition, FKSchemaCondition, FKTableCondition: string;
+  function GetRuleType(const Rule: String): TZImportedKey;
+  begin
+    // Currently duckdb rules will always be "NO ACTION"
+    if Rule = 'RESTRICT' then
+      Result := ikRestrict
+    else if Rule = 'NO ACTION' then
+      Result := ikNoAction
+    else if Rule = 'CASCADE' then
+      Result := ikCascade
+    else if Rule = 'SET DEFAULT' then
+      Result := ikSetDefault
+    else if Rule = 'SET NULL' then
+      Result := ikSetNull
+    else
+      Result := ikNotDeferrable; //impossible!
+  end;
 begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetCrossReference(PrimaryCatalog, PrimarySchema, PrimaryTable, ForeignCatalog, ForeignSchema, ForeignTable);
+  Result := inherited UncachedGetCrossReference(
+    PrimaryCatalog, PrimarySchema, PrimaryTable,
+    ForeignCatalog, ForeignSchema, ForeignTable);
 
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  PKCatCondition := ConstructNameCondition(AddEscapeCharToWildcards(PrimaryCatalog),'tc_pk.table_catalog');
+  PKSchemaCondition := ConstructNameCondition(AddEscapeCharToWildcards(PrimarySchema),'tc_pk.table_schema');
+  PKTableCondition := ConstructNameCondition(AddEscapeCharToWildcards(PrimaryTable),'tc_pk.table_name');
+  FKCatCondition := ConstructNameCondition(AddEscapeCharToWildcards(ForeignCatalog),'tc_fk.table_catalog');
+  FKSchemaCondition := ConstructNameCondition(AddEscapeCharToWildcards(ForeignSchema),'tc_fk.table_schema');
+  FKTableCondition := ConstructNameCondition(AddEscapeCharToWildcards(ForeignTable),'tc_fk.table_name');
+
+  SQL :=
+    'select ' +
+    '  tc_pk.table_catalog as pktable_cat, ' +
+    '  tc_pk.table_schema as pktable_schem, ' +
+    '  tc_pk.table_name as pktable_name, ' +
+    '  cols_pk.column_name as pkcolumn_name, ' +
+    '  tc_fk.table_catalog as fktable_cat, ' +
+    '  tc_fk.table_schema as fktable_schem, ' +
+    '  tc_fk.table_name as fktable_name, ' +
+    '  cols_fk.column_name as fkcolumn_name, ' +
+    '  cols_fk.ordinal_position as ord_pos, ' +
+    '  rc.update_rule as update_rule, ' +
+    '  rc.delete_rule as delete_rule, ' +
+    '  tc_fk.constraint_name as fk_name, ' +
+    '  tc_pk.constraint_name as pk_name, ' +
+    '  tc_fk.is_deferrable as deferrability ' +
+    'from ' +
+    '  /* fks */ ' +
+    '  information_schema.table_constraints as tc_fk ' +
+    '  join information_schema.referential_constraints as rc ' +
+    '  on tc_fk.constraint_name = rc.constraint_name ' +
+    ' ' +
+    '  /* pks */ ' +
+    '  join information_schema.table_constraints as tc_pk ' +
+    '    on tc_pk.constraint_name = rc.unique_constraint_name ' +
+    ' ' +
+    '  /* pk columns */ ' +
+    '  join information_schema.key_column_usage as cols_pk ' +
+    '   on tc_pk.constraint_name = cols_pk.constraint_name ' +
+    ' ' +
+    '  /* fk columns */ ' +
+    '  join information_schema.key_column_usage as cols_fk ' +
+    '   on tc_fk.constraint_name = cols_fk.constraint_name ' +
+    '   and cols_pk.ordinal_position = cols_fk.ordinal_position ' +
+    'where 1 = 1 ' +
+    AppendCondition(PKCatCondition) +
+    AppendCondition(PKSchemaCondition) +
+    AppendCondition(PKTableCondition) +
+    AppendCondition(FKCatCondition) +
+    AppendCondition(FKSchemaCondition) +
+    AppendCondition(FKTableCondition) +
+    'order by fktable_cat, fktable_schem, fktable_name, ord_pos';
+
+  with GetConnection.CreateStatement.ExecuteQuery(SQL) do
+  begin
+    while Next do
+    begin
+      Result.MoveToInsertRow;
+      Result.UpdatePAnsiChar(CrossRefKeyColPKTableCatalogIndex, GetPAnsiChar(CrossRefKeyColPKTableCatalogIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColPKTableSchemaIndex, GetPAnsiChar(CrossRefKeyColPKTableSchemaIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColPKTableNameIndex, GetPAnsiChar(CrossRefKeyColPKTableNameIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColPKColumnNameIndex, GetPAnsiChar(CrossRefKeyColPKColumnNameIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColFKTableCatalogIndex, GetPAnsiChar(CrossRefKeyColFKTableCatalogIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColFKTableSchemaIndex, GetPAnsiChar(CrossRefKeyColFKTableSchemaIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColFKTableNameIndex, GetPAnsiChar(CrossRefKeyColFKTableNameIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColFKColumnNameIndex, GetPAnsiChar(CrossRefKeyColFKColumnNameIndex, Len), Len);
+      Result.UpdateSmall(CrossRefKeyColKeySeqIndex, GetSmall(CrossRefKeyColKeySeqIndex));
+      Result.UpdateSmall(CrossRefKeyColUpdateRuleIndex, Ord(GetRuleType(GetString(CrossRefKeyColUpdateRuleIndex))));
+      Result.UpdateSmall(CrossRefKeyColDeleteRuleIndex, Ord(GetRuleType(GetString(CrossRefKeyColDeleteRuleIndex))));
+      Result.UpdatePAnsiChar(CrossRefKeyColFKNameIndex, GetPAnsiChar(CrossRefKeyColFKNameIndex, Len), Len);
+      Result.UpdatePAnsiChar(CrossRefKeyColPKNameIndex, GetPAnsiChar(CrossRefKeyColPKNameIndex, Len), Len);
+      if GetString(CrossRefKeyColDeferrabilityIndex) = 'NO' then
+        Result.UpdateSmall(CrossRefKeyColDeferrabilityIndex, Ord(ikNotDeferrable))
+      else
+        Result.UpdateSmall(CrossRefKeyColDeferrabilityIndex, Ord(ikInitiallyDeferred));
+      Result.InsertRow;
+    end;
+    Close;
+  end;
 end;
 
 {**
@@ -2135,14 +2310,90 @@ end;
 function TZDuckDBDatabaseMetadata.UncachedGetIndexInfo(const Catalog: string;
   const Schema: string; const Table: string; Unique: Boolean;
   Approximate: Boolean): IZResultSet;
+const
+  // CatalogNameIndex = FirstDbcIndex + 0;
+  // SchemaNameIndex  = FirstDbcIndex + 1;
+  // TableNameIndex   = FirstDbcIndex + 2;
+  Uniqueness_Index      = FirstDbcIndex + 3;
+  IndexName_Index      = FirstDbcIndex + 4;
+  Expressions_Index = FirstDbcIndex + 5;
 var
-  Res: WideString;
+  Len: NativeUint;
+  SQL: string;
+  CatalogCondition, SchemaCondition, TableCondition: String;
+  Expressions: String;
+  ColumnStringList: TStrings;
+  Index: Integer;
 begin
-  Res := (GetConnection as IZDbcProxyConnection).GetConnectionInterface.GetIndexInfo(Catalog, Schema, Table, Unique, Approximate);
+  CatalogCondition := ConstructNameCondition(Catalog,'di.database_name');
+  SchemaCondition := ConstructNameCondition(Schema,'di.schema_name');
+  TableCondition := ConstructNameCondition(Table,'di.table_name');
+  Result:=inherited UncachedGetIndexInfo(Catalog, Schema, Table, Unique, Approximate);
+  SQL :=
+    'select ' +
+    '  di.database_name, ' +
+    '  di.schema_name, ' +
+    '  di.table_name, ' +
+    '  di.is_unique, ' +
+    '  di.index_name, ' +
+    '  di.expressions ' +
+    'from duckdb_indexes() di ' +
+    'where 1=1 ' +
+    AppendCondition(CatalogCondition) + ' ' +
+    AppendCondition(SchemaCondition) + ' ' +
+    AppendCondition(TableCondition) + ' ';
+  if Unique then
+    SQL := SQL + ' and di.is_unique = true ';
+  SQL := SQL + ' order by di.is_unique, di.index_name';
 
-  Result := TZDbcProxyResultSet.Create(GetConnection, '', Res);
+  ColumnStringList := TStringList.Create;
+  try
+    {$IFDEF WITH_VAR_INIT_WARNING}Len := 0;{$ENDIF}
+    with GetConnection.CreateStatement.ExecuteQuery(SQL) do
+    begin
+      while Next do
+      begin
+        // The expressions column contains a comma list of column names
+        Expressions := Trim(GetString(Expressions_Index));
+        if ((Length(Expressions) > 0) and
+            (Expressions[1] = '[') and
+            (Expressions[Length(Expressions)] = ']')) then
+          Expressions := Copy(Expressions, 2, Length(Expressions) - 2);
+        PutSplitString(ColumnStringList, Expressions, ',');
+        for Index := 0 to ColumnStringList.Count - 1 do
+        begin
+          Result.MoveToInsertRow;
+          if FConSettings.ClientCodePage.Encoding = ceUTF16 then begin
+            Result.UpdatePWideChar(CatalogNameIndex, GetPWideChar(CatalogNameIndex, Len), Len);
+            Result.UpdatePWideChar(SchemaNameIndex, GetPWideChar(SchemaNameIndex, Len), Len);
+            Result.UpdatePWideChar(TableNameIndex, GetPWideChar(TableNameIndex, Len), Len);
+            Result.UpdatePWideChar(IndexInfoColIndexNameIndex, GetPWideChar(IndexName_Index, Len), Len);
+          end else begin
+            Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(CatalogNameIndex, Len), Len);
+            Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(SchemaNameIndex, Len), Len);
+            Result.UpdatePAnsiChar(TableNameIndex, GetPAnsiChar(TableNameIndex, Len), Len);
+            Result.UpdatePAnsiChar(IndexInfoColIndexNameIndex, GetPAnsiChar(IndexName_Index, Len), Len);
+          end;
+          Result.UpdateBoolean(IndexInfoColNonUniqueIndex, GetBoolean(Uniqueness_Index));
+          //Result.UpdateNull(IndexInfoColIndexQualifierIndex);
+          Result.UpdateInt(IndexInfoColTypeIndex, 3);
+          Result.UpdateString(IndexInfoColColumnNameIndex, Trim(ColumnStringList[Index]));
+          Result.UpdateInt(IndexInfoColOrdPositionIndex, Index + 1);
+          Result.UpdateString(IndexInfoColAscOrDescIndex, 'A');
+          Result.UpdateInt(IndexInfoColCardinalityIndex, 0);
+          Result.UpdateInt(IndexInfoColPagesIndex, 0);
+          Result.InsertRow;
+        end;
+      end;  // While next
+      Close;
+    end;   // with
+  finally
+    ColumnStringList.Free;
+  end;
+
 end;
 
+(*
 function TZDuckDBDatabaseMetadata.UncachedGetSequences(const Catalog, SchemaPattern,
   SequenceNamePattern: string): IZResultSet;
 var
@@ -2178,5 +2429,5 @@ end;
 
 *)
 
-{$ENDIF ENABLE_PROXY} //if set we have an empty unit
+{$ENDIF ZEOS_DISABLE_DUCKDB}
 end.
