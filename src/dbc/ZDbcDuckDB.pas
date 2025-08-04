@@ -93,6 +93,7 @@ type
     FPlainDriver: TZDuckDBPlainDriver;
     FDatabase: TDuckDB_Database;
     FConnection: TDuckDB_Connection;
+    FSchema: string;
   protected
     procedure CheckDuckDBError(Res: TDuckDB_State; AMessage: String); overload;
     procedure CheckDuckDbError(AResult: PDuckDB_Result); overload;
@@ -535,16 +536,23 @@ end;
 
 procedure TZDbcDuckDBConnection.SetCatalog(const Catalog: string);
 begin
-  if Closed then
-    Open;
-
-  if (Catalog <> 'main') and (Catalog <> '') then
-    raise Exception.Create('Changing the schema is not supported yet');
+  if Catalog <> FSchema then begin
+    FSchema := Catalog;
+    if not Closed and (FSchema <> '') then
+      ExecuteImmediat('SET SCHEMA = ''' + FSchema + '''', lcOther);
+  end;
 end;
 
 function TZDbcDuckDBConnection.GetCatalog: string;
 begin
-  Result := 'main';
+  if not Closed and (FSchema = '') then
+    with CreateStatementWithParams(nil).ExecuteQuery('select current_schema()') do
+    begin
+      if Next then
+        FSchema := GetString(FirstDBCIndex);
+      Close;
+    end;
+  Result := FSchema;
 end;
 
 procedure TZDbcDuckDBConnection.SetTransactionIsolation(Level: TZTransactIsolationLevel);
