@@ -2082,30 +2082,15 @@ function TODBCDatabaseMetadataW.UncachedGetTables(const Catalog: string;
 var
   I: Integer;
   RS: IZResultSet;
-  Len: NativeUInt;
   HSTMT: SQLHSTMT;
   Cat, Schem, Table, TableTypes: UnicodeString;
   ODBCConnection: IZODBCConnection;
-  procedure TransferStr(ColIdx: Integer);
-  var
-    WChar: PWideChar;
-  begin
-    //Check the strings because the Firebird SQL driver under some circumstances returns #00 for the Catalog
-    //This will lead to problems with metadata caching.
-    WChar := RS.GetPWideChar(ColIdx, Len);
-    if (Len > 0) and (SysUtils.StrLen(WChar) = 0) then
-      Result.UpdateString(ColIdx, EmptyStr)
-    else
-      Result.UpdatePWideChar(ColIdx, WChar, Len);
-  end;
-
 begin
   Result:=inherited UncachedGetTables(Catalog, SchemaPattern, TableNamePattern, Types);
 
   Cat := DecomposeObjectString(Catalog);
   Schem := DecomposeObjectString(SchemaPattern);
   Table := DecomposeObjectString(TableNamePattern);
-  {$IFDEF WITH_VAR_INIT_WARNING}Len := 0;{$ENDIF}
   TableTypes := '';
   for I := Low(Types) to High(Types) do begin
     if Length(TableTypes) > 0 then
@@ -2122,17 +2107,17 @@ begin
   RS := TODBCResultSetW.CreateForMetadataCall(HSTMT, fPHDBC^, ODBCConnection);
   CheckStmtError(fPLainW.SQLTablesW(HSTMT, Pointer(Cat), Length(Cat), Pointer(Schem), Length(Schem),
     Pointer(Table), Length(Table), Pointer(TableTypes), Length(TableTypes)), HSTMT, ODBCConnection);
-  if Assigned(RS) then begin
-    while RS.Next do begin
+  if Assigned(RS) then with RS do begin
+    while Next do begin
       Result.MoveToInsertRow;
-      TransferStr(CatalogNameIndex);
-      TransferStr(SchemaNameIndex);
-      TransferStr(TableNameIndex);
-      TransferStr(TableColumnsSQLType);
-      TransferStr(TableColumnsRemarks);
+      Result.UpdateUnicodeString(CatalogNameIndex, CleanupString(GetUnicodeString(CatalogNameIndex)));
+      Result.UpdateUnicodeString(SchemaNameIndex, CleanupString(GetUnicodeString(SchemaNameIndex)));
+      Result.UpdateUnicodeString(TableNameIndex, CleanupString(GetUnicodeString(TableNameIndex)));
+      Result.UpdateUnicodeString(TableColumnsSQLType, CleanupString(GetUnicodeString(TableColumnsSQLType)));
+      Result.UpdateUnicodeString(TableColumnsRemarks, CleanupString(GetUnicodeString(TableColumnsRemarks)));
       Result.InsertRow;
     end;
-    Rs.Close;
+    Close;
   end;
 end;
 
