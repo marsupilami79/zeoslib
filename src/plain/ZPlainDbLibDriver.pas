@@ -1151,6 +1151,7 @@ type
   {** Represents a generic interface to DBLIB native API. }
   IZDBLibPlainDriver = interface (IZPlainDriver)
     ['{7731C3B4-0608-4B6B-B089-240AC43A3463}']
+    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE;
   end;
 
   TDBERRHANDLE_PROC_cdecl = function(Proc: PDBPROCESS; Severity, DbErr, OsErr: Integer;
@@ -1213,7 +1214,7 @@ type
   TDbLibMessageHandler = class; //forward
   {$ENDIF TEST_CALLBACK}
   TDBLibraryVendorType = (lvtFreeTDS, lvtMS, lvtSybase);
-  TZDBLIBPLainDriver = class(TZAbstractPlainDriver, IZPlainDriver)
+  TZDBLIBPLainDriver = class(TZAbstractPlainDriver, IZDBLibPlainDriver)
   private
     {$IFDEF TEST_CALLBACK}
     FSQLErrorHandlerList: TZDBLibErrorList;
