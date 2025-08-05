@@ -1845,11 +1845,7 @@ function TODBCDatabaseMetadataW.CleanupString(InStr: UnicodeString): UnicodeStri
 var
   StrLen: NativeUInt;
 begin
-  {$IFDEF WITH_WIDECHAR_STRLEN}
-  StrLen := SysUtils.StrLen(PWideChar(InStr));
-  {$ELSE}
-  StrLen := Length(PWideChar(InStr));
-  {$ENDIF}
+  StrLen := WStrLen(PWideChar(InStr));
 
   If (Length(InStr) > 0) and (StrLen = 0) then
     Result := EmptyStr
