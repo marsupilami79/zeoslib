@@ -355,13 +355,13 @@ implementation
 {$IFNDEF ZEOS_DISABLE_ODBC} //if set we have an empty unit
 
 uses
-  {$IFDEF MSWINDOWS}Windows,{$ENDIF}{$IFDEF NO_INLINE_SIZE_CHECK}Math,{$ENDIF}
+  {$IFDEF MSWINDOWS}Windows,{$ENDIF} Math,
   ZSysUtils, ZEncoding, ZFastCode, ZMessages,
   ZPlainDriver, ZODBCToken,
   ZPostgreSqlAnalyser, ZPostgreSqlToken, ZSybaseAnalyser, ZSybaseToken,
   ZInterbaseAnalyser, ZInterbaseToken, ZMySqlAnalyser, ZMySqlToken,
   ZOracleAnalyser, ZOracleToken,
-  ZDbcODBCMetadata, ZDbcODBCStatement, ZDbcUtils, ZDbcProperties;
+  ZDbcODBCMetadata, ZDbcODBCStatement, ZDbcUtils, ZDbcODBCUtils, ZDbcProperties;
 
 { TZODBCDriver }
 
@@ -1125,18 +1125,19 @@ var
   {$ENDIF}
   aLen: SQLINTEGER;
   Ret: SQLRETURN;
+  Buffer : array[0 .. 8191] of WideChar;
 begin
   Result := inherited GetCatalog;
   if Result = '' then begin
+    FillChar(Buffer, Length(Buffer) shl 1, 0);
     RET := TODBC3UnicodePlainDriver(fODBCPlainDriver).SQLGetConnectAttrW(fHDBC,
-      SQL_ATTR_CURRENT_CATALOG, nil, 0, @aLen);
+      SQL_ATTR_CURRENT_CATALOG, @Buffer, Length(Buffer) - 1, @aLen);
     if Ret <> SQL_SUCCESS then
       HandleErrorOrWarning(Ret, fHDBC, SQL_HANDLE_DBC, 'GET CATALOG', lcOther, Self);
+    aLen := Min(aLen, WStrLen(PWideChar(@Buffer[0])));
     if aLen > 0 then begin
       {$IFDEF UNICODE}
-      SetLength(Result, aLen shr 1);
-      Ret := TODBC3UnicodePlainDriver(fODBCPlainDriver).SQLGetConnectAttrW(fHDBC,
-        SQL_ATTR_CURRENT_CATALOG, Pointer(Result), aLen+2, @aLen);
+      SetString(result, PWideChar(@Buffer[0]), aLen shr 1);
       {$ELSE}
       {$IFDEF WITH_VAR_INIT_WARNING}Buf := '';{$ENDIF}
       SetLength(Buf, aLen shr 1);
@@ -1526,3 +1527,4 @@ finalization
 
 {$ENDIF ZEOS_DISABLE_ODBC} //if set we have an empty unit
 end.
+

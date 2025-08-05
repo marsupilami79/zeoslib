@@ -104,6 +104,12 @@ function GetConnectionString(WindowHandle: SQLHWND; const InConnectionString, Li
 procedure Reverse8Bytes(P: Pointer);
 {$ENDIF}
 
+/// <summary>
+///   Does the same as StrLen(PWideChar). Introduced because Delphi 7 doesn't have
+///   this function.
+/// </summary>
+function WStrLen(const InVal: PWideChar): Cardinal;
+
 const
   LobArrayIndexOffSet = NativeUInt(SizeOf(Pointer));
   LobParameterIndexOffSet = LobArrayIndexOffSet+NativeUInt(SizeOf(Integer));
@@ -583,6 +589,11 @@ begin
       ODBC3BaseDriver.SQLFreeHandle(SQL_HANDLE_ENV, HENV);
     PlainDriver := nil;
   end;
+end;
+
+function WStrLen(const InVal: PWideChar): Cardinal;
+begin
+  Result := Length(Inval);
 end;
 
 {$ENDIF ZEOS_DISABLE_ODBC} //if set we have an empty unit

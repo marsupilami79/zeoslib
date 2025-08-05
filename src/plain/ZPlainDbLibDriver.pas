@@ -1151,6 +1151,7 @@ type
   {** Represents a generic interface to DBLIB native API. }
   IZDBLibPlainDriver = interface (IZPlainDriver)
     ['{7731C3B4-0608-4B6B-B089-240AC43A3463}']
+    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE;
   end;
 
   TDBERRHANDLE_PROC_cdecl = function(Proc: PDBPROCESS; Severity, DbErr, OsErr: Integer;
@@ -1213,7 +1214,7 @@ type
   TDbLibMessageHandler = class; //forward
   {$ENDIF TEST_CALLBACK}
   TDBLibraryVendorType = (lvtFreeTDS, lvtMS, lvtSybase);
-  TZDBLIBPLainDriver = class(TZAbstractPlainDriver, IZPlainDriver)
+  TZDBLIBPLainDriver = class(TZAbstractPlainDriver, IZDBLibPlainDriver)
   private
     {$IFDEF TEST_CALLBACK}
     FSQLErrorHandlerList: TZDBLibErrorList;
@@ -1617,7 +1618,7 @@ type
     function dbSetLUser(Login: PLOGINREC; UserName: PAnsiChar): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
   public { incompatibility workarounds }
     function dbRpcExec(dbProc: PDBPROCESS): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
-    function dbIntit: RETCODE;
+    function dbInit: RETCODE;
     function dbsetversion(Version: DBINT): RETCODE;
     function dbLogin: PLOGINREC; virtual;
   public //mapings from zeos to provider enums
@@ -2418,7 +2419,7 @@ end;
 {$ENDIF MSWINDOWS}
 
 {** Initialize DB-Library. }
-function TZDBLIBPLainDriver.dbIntit: RETCODE;
+function TZDBLIBPLainDriver.dbInit: RETCODE;
 {$IFDEF MSWINDOWS}var P: PAnsiChar;{$ENDIF}
 begin
   {$IFDEF MSWINDOWS}
@@ -2977,6 +2978,8 @@ begin
 end;
 
 procedure TZDBLIBPLainDriver.LoadApi;
+var
+  i: Integer;
 begin
   with FLoader do begin
     //test for not exported methods to identify the libs:
@@ -3201,7 +3204,8 @@ begin
         {$IFDEF MSWINDOWS}OldMsSQLErrorHandle{$ELSE}OldSybaseErrorHandle{$ENDIF}  := dberrhandle(DbLibErrorHandle);
         {$IFDEF MSWINDOWS}OldMsSQLMessageHandle{$ELSE}OldSybaseMessageHandle{$ENDIF} := dbmsghandle(DbLibMessageHandle);
       end;
-      Assert(dbintit = SUCCEED, 'dbinit failed');
+      i := dbinit;
+      Assert(i = SUCCEED, 'dbinit failed');
     end;
   end;
 end;
