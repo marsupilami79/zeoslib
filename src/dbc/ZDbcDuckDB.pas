@@ -360,6 +360,11 @@ begin
   ConSettings.ClientCodePage.Encoding := ceUTF8;
   ConSettings.ClientCodePage.CharWidth := 4;
   ConSettings.ClientCodePage.CP := zCP_UTF8;
+
+  if FSchema <> '' then begin
+    LogMessage := FSchema;
+    SetCatalog(LogMessage);
+  end;
 end;
 
 function TZDbcDuckDBConnection.CreateStatementWithParams(Info: TStrings): IZStatement;

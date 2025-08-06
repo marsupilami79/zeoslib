@@ -260,6 +260,10 @@ type
   end;
 
   TZDbcDuckDBResultSetMetadata = Class(TZAbstractResultSetMetadata)
+  protected
+    procedure SetColumnPrecisionFromGetColumnsRS({$IFDEF AUTOREFCOUNT}const{$ENDIF}ColumnInfo: TZColumnInfo; const TableColumns: IZResultSet); override;
+    procedure SetColumnScaleFromGetColumnsRS({$IFDEF AUTOREFCOUNT}const{$ENDIF} ColumnInfo: TZColumnInfo; const TableColumns: IZResultSet); override;
+  public
     constructor Create(const Metadata: IZDatabaseMetadata; const SQL: string;
       ParentResultSet: TZAbstractResultSet);
   End;
@@ -282,8 +286,20 @@ constructor TZDbcDuckDBResultSetMetadata.Create(const Metadata: IZDatabaseMetada
       ParentResultSet: TZAbstractResultSet);
 begin
   inherited;
-  //Loaded := true;
 end;
+
+procedure TZDbcDuckDBResultSetMetadata.SetColumnPrecisionFromGetColumnsRS({$IFDEF AUTOREFCOUNT}const{$ENDIF}ColumnInfo: TZColumnInfo; const TableColumns: IZResultSet);
+begin
+  if ColumnInfo.ColumnType in [stCurrency, stBigDecimal] then
+    ColumnInfo.Precision := TableColumns.GetInt(TableColColumnSizeIndex);
+end;
+
+procedure TZDbcDuckDBResultSetMetadata.SetColumnScaleFromGetColumnsRS({$IFDEF AUTOREFCOUNT}const{$ENDIF} ColumnInfo: TZColumnInfo; const TableColumns: IZResultSet);
+begin
+  if ColumnInfo.ColumnType in [stCurrency, stBigDecimal] then
+    ColumnInfo.Scale := TableColumns.GetInt(TableColColumnDecimalDigitsIndex);
+end;
+
 
 { TZDbcProxyResultSet }
 

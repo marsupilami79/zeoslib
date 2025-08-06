@@ -1388,10 +1388,11 @@ function TZDuckDBDatabaseMetadata.UncachedGetSchemas: IZResultSet;
 begin
   Result := inherited UncachedGetSchemas;
   (Result as IZVirtualResultSet).SetConcurrency(rcUpdatable);
-  with GetConnection.CreateStatement.ExecuteQuery('select distinct schema_name from information_schema.schemata order by schema_name') do begin
+  with GetConnection.CreateStatement.ExecuteQuery('select schema_name, catalog_name from information_schema.schemata order by catalog_name, schema_name') do begin
     while Next do begin
       Result.MoveToInsertRow;
       Result.UpdateString(0, GetString(0));
+      Result.UpdateString(1, GetString(1));
       Result.InsertRow;
     end;
   end;
@@ -1601,11 +1602,11 @@ begin
       CopyData('numeric_precision_radix', 'NUM_PREC_RADIX', stInteger);
       CopyData('numeric_scale', 'DECIMAL_DIGITS', stInteger);
       CopyData('is_identity', 'AUTO_INCREMENT', stBoolean);
-      if DuckData.IsNullByName('is_updatable') then begin
+      {if DuckData.IsNullByName('is_updatable') then begin
         Result.UpdateNullByName('WRITABLE');
         Result.UpdateNullByName('DEFINITELYWRITABLE');
         Result.UpdateNullByName('READONLY')
-      end else if DuckData.GetBooleanByName('is_updatable') then begin
+      end else} if DuckData.IsNullByName('is_updatable') or DuckData.GetBooleanByName('is_updatable') then begin
         Result.UpdateBooleanByName('WRITABLE', true);
         Result.UpdateBooleanByName('DEFINITELYWRITABLE', true);
         Result.UpdateBooleanByName('READONLY', false);
