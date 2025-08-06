@@ -1129,7 +1129,7 @@ var
 begin
   Result := inherited GetCatalog;
   if Result = '' then begin
-    FillChar(Buffer, Length(Buffer) shl 1, 0);
+    FillChar(Buffer, Length(Buffer) shl 1, #0);
     RET := TODBC3UnicodePlainDriver(fODBCPlainDriver).SQLGetConnectAttrW(fHDBC,
       SQL_ATTR_CURRENT_CATALOG, @Buffer, Length(Buffer) - 1, @aLen);
     if Ret <> SQL_SUCCESS then
