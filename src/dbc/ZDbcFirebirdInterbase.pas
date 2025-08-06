@@ -936,7 +936,6 @@ type
     procedure SetPWideChar(Index: Cardinal; Value: PWideChar; Len: LengthInt);
   protected
     FInParamDescripors: PZInterbaseFirebirdParamArray;
-    FBatchStmts: array[Boolean] of TZIB_FBStmt;
     FDB_CP_ID: Word;
     FStatementType: TZIbSqlStatementType;
     FOutMessageCount, FInMessageCount, FMemPerRow: Cardinal;
@@ -946,6 +945,7 @@ type
     FCodePageArray: TWordDynArray;
     FByteBuffer: PByteBuffer;
     FOrgTypeList: TZIBFBOrgSqlTypeAndScaleList;
+    FBatchStmts: array[Boolean] of TZIB_FBStmt;
     procedure ExecuteBatchDml; virtual;
     function SplittQuery(const SQL: SQLString): RawByteString;
     function GetExecuteBlockString(RemainingArrayRows: Integer;
@@ -4707,7 +4707,7 @@ begin
       // statment limits http://www.firebirdfaq.org/faq197/
       if Connection.GetHostVersion >= 3000000 //FBVersion => 3
       then ParamIndex := 10*1024*1024 //since FB3
-      else ParamIndex := 32*1024;
+      else ParamIndex := 16*1024;
       ParamIndex := ParamIndex - LBlockLen;
       If FReturningFound then
         ParamIndex := ParamIndex - 9;///Length(cRETURNING);
