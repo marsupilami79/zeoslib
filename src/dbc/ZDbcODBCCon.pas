@@ -1134,7 +1134,7 @@ begin
       SQL_ATTR_CURRENT_CATALOG, @Buffer, Length(Buffer) - 1, @aLen);
     if Ret <> SQL_SUCCESS then
       HandleErrorOrWarning(Ret, fHDBC, SQL_HANDLE_DBC, 'GET CATALOG', lcOther, Self);
-    aLen := Min(aLen, WStrLen(PWideChar(@Buffer[0])));
+    aLen := Min(aLen, WStrLen(PWideChar(@Buffer[0])) shl 1);
     if aLen > 0 then begin
       {$IFDEF UNICODE}
       SetString(result, PWideChar(@Buffer[0]), aLen shr 1);
