@@ -532,6 +532,7 @@ var
   P, PEnd: PChar;
   TrHandle: TISC_TR_HANDLE;
   DBCreated: Boolean;
+  TempEventList: TZFirebirdInterbaseEventList;
   procedure PrepareDPB;
   var
     R: RawByteString;
@@ -731,7 +732,13 @@ reconnect:
     (FMetadata as TZInterbase6DatabaseMetadata).SetUTF8CodePageInfo;
     if (FCLientCodePage <> DBCP) then begin
       Info.Values[ConnProps_isc_dpb_lc_ctype] := DBCP;
-      InternalClose;
+      try
+        TempEventList := FEventList;
+        FEventList := nil;
+        InternalClose;
+      finally
+        FEventList := TempEventList;
+      end;
       goto reconnect; //build new TDB and reopen in CS_NONE mode
     end;
   end else if FClientCodePage = '' then
