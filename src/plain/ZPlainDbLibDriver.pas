@@ -1731,6 +1731,8 @@ begin
 end;
 
 procedure TZDBLibAbstractPlainDriver.LoadApi;
+var
+  i: RETCODE;
 begin
   with FLoader do
   begin
@@ -2022,7 +2024,8 @@ begin
         OldMsSQLErrorHandle := Fdberrhandle(DbLibErrorHandle);
         OldMsSQLMessageHandle := Fdbmsghandle(DbLibMessageHandle);
       end;
-      Assert(dbIntit = SUCCEED, 'dbinit failed');
+      i := dbIntit();
+      Assert(i = SUCCEED, 'dbinit failed');
     end;
   end;
 end;
