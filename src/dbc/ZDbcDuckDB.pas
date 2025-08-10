@@ -63,7 +63,7 @@ uses
 
 type
 
-  {** Implements DBC Proxy Driver. }
+  {** Implements DBC DuckDb Driver. }
   TZDbcDuckDBDriver = class(TZAbstractDriver)
   public
     constructor Create; override;
@@ -75,15 +75,15 @@ type
     function GetStatementAnalyser: IZStatementAnalyser; override;
   end;
 
-  {** Represents a DBC Proxy specific connection interface. }
+  {** Represents a DBC DuckDb specific connection interface. }
   IZDbcDuckDBConnection = interface (IZConnection)
-    ['{C6ACB283-1126-426B-9637-B4CFD430BB33}']
+    ['{ABA70EDA-E0E4-4886-8FA5-53D3A8D4607B}']
     function GetPlainDriver: TZDuckDBPlainDriver;
     function GetConnectionHandle: TDuckDB_Connection;
     procedure CheckDuckDbError(AResult: PDuckDB_Result);
   end;
 
-  {** Implements DBC Proxy Database Connection. }
+  {** Implements DBC DuckDb Database Connection. }
 
   { TZDuckDBConnection }
 
@@ -308,7 +308,7 @@ begin
   Result := TZGenericStatementAnalyser.Create; { thread save! Allways return a new Analyser! }
 end;
 
-{ TZDbcProxyConnection }
+{ TZDbcDuckDbConnection }
 
 procedure TZDbcDuckDBConnection.CheckDuckDBError(Res: TDuckDB_State; AMessage: String);
 begin
