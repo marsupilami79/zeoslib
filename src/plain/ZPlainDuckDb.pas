@@ -1713,7 +1713,7 @@ begin
     @DuckDB_UHugeint_To_Double := GetAddress('duckdb_uhugeint_to_double');
     @DuckDB_Double_To_UHugeint := GetAddress('duckdb_double_to_uhugeint');
     @DuckDB_Double_To_Decimal := GetAddress('duckdb_double_to_decimal');
-    @DuckDB_Decimal_To_Double := GetAddress('duckdb_decimal_do_double');
+    @DuckDB_Decimal_To_Double := GetAddress('duckdb_decimal_to_double');
     @DuckDB_Prepare := GetAddress('duckdb_prepare');
     @DuckDB_Destroy_Prepare := GetAddress('duckdb_destroy_prepare');
     @DuckDB_Prepare_Error := GetAddress('duckdb_prepare_error');

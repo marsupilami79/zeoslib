@@ -1356,17 +1356,20 @@ begin
   SQL := SQL + ' order by table_catalog, table_schema, table_name';
   with GetConnection.CreateStatement.ExecuteQuery(SQL) do
   begin
-    while Next do
-    begin
-      Result.MoveToInsertRow;
-      Result.UpdateString(CatalogNameIndex, GetString(CatalogNameIndex));
-      Result.UpdateString(SchemaNameIndex, GetString(SchemaNameIndex));
-      Result.UpdateString(TableNameIndex, GetString(TableNameIndex));
-      Result.UpdateString(3, GetString(3));
-      Result.UpdateStringByName('remarks', GetStringByName('table_comment'));
-      Result.InsertRow;
+    try
+      while Next do
+      begin
+        Result.MoveToInsertRow;
+        Result.UpdateString(CatalogNameIndex, GetString(CatalogNameIndex));
+        Result.UpdateString(SchemaNameIndex, GetString(SchemaNameIndex));
+        Result.UpdateString(TableNameIndex, GetString(TableNameIndex));
+        Result.UpdateString(3, GetString(3));
+        Result.UpdateStringByName('remarks', GetStringByName('table_comment'));
+        Result.InsertRow;
+      end;
+    finally
+      Close;
     end;
-    Close;
   end;
   (Result as IZVirtualResultSet).BeforeFirst;
   (Result as IZVirtualResultSet).SetConcurrency(rcReadOnly);
@@ -1389,11 +1392,15 @@ begin
   Result := inherited UncachedGetSchemas;
   (Result as IZVirtualResultSet).SetConcurrency(rcUpdatable);
   with GetConnection.CreateStatement.ExecuteQuery('select schema_name, catalog_name from information_schema.schemata order by catalog_name, schema_name') do begin
-    while Next do begin
-      Result.MoveToInsertRow;
-      Result.UpdateString(0, GetString(0));
-      Result.UpdateString(1, GetString(1));
-      Result.InsertRow;
+    try
+      while Next do begin
+        Result.MoveToInsertRow;
+        Result.UpdateString(0, GetString(0));
+        Result.UpdateString(1, GetString(1));
+        Result.InsertRow;
+      end;
+    finally
+      Close;
     end;
   end;
   (Result as IZVirtualResultSet).BeforeFirst;
@@ -1418,10 +1425,14 @@ begin
 
   (Result as IZVirtualResultSet).SetConcurrency(rcUpdatable);
   with GetConnection.CreateStatement.ExecuteQuery('select distinct catalog_name from information_schema.schemata order by catalog_name') do begin
-    while Next do begin
-      Result.MoveToInsertRow;
-      Result.UpdateString(0, GetString(0));
-      Result.InsertRow;
+    try
+      while Next do begin
+        Result.MoveToInsertRow;
+        Result.UpdateString(0, GetString(0));
+        Result.InsertRow;
+      end;
+    finally
+      Close;
     end;
   end;
   (Result as IZVirtualResultSet).SetConcurrency(rcReadOnly);
@@ -2155,29 +2166,32 @@ begin
 
   with GetConnection.CreateStatement.ExecuteQuery(SQL) do
   begin
-    while Next do
-    begin
-      Result.MoveToInsertRow;
-      Result.UpdatePAnsiChar(CrossRefKeyColPKTableCatalogIndex, GetPAnsiChar(CrossRefKeyColPKTableCatalogIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColPKTableSchemaIndex, GetPAnsiChar(CrossRefKeyColPKTableSchemaIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColPKTableNameIndex, GetPAnsiChar(CrossRefKeyColPKTableNameIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColPKColumnNameIndex, GetPAnsiChar(CrossRefKeyColPKColumnNameIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColFKTableCatalogIndex, GetPAnsiChar(CrossRefKeyColFKTableCatalogIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColFKTableSchemaIndex, GetPAnsiChar(CrossRefKeyColFKTableSchemaIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColFKTableNameIndex, GetPAnsiChar(CrossRefKeyColFKTableNameIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColFKColumnNameIndex, GetPAnsiChar(CrossRefKeyColFKColumnNameIndex, Len), Len);
-      Result.UpdateSmall(CrossRefKeyColKeySeqIndex, GetSmall(CrossRefKeyColKeySeqIndex));
-      Result.UpdateSmall(CrossRefKeyColUpdateRuleIndex, Ord(GetRuleType(GetString(CrossRefKeyColUpdateRuleIndex))));
-      Result.UpdateSmall(CrossRefKeyColDeleteRuleIndex, Ord(GetRuleType(GetString(CrossRefKeyColDeleteRuleIndex))));
-      Result.UpdatePAnsiChar(CrossRefKeyColFKNameIndex, GetPAnsiChar(CrossRefKeyColFKNameIndex, Len), Len);
-      Result.UpdatePAnsiChar(CrossRefKeyColPKNameIndex, GetPAnsiChar(CrossRefKeyColPKNameIndex, Len), Len);
-      if GetString(CrossRefKeyColDeferrabilityIndex) = 'NO' then
-        Result.UpdateSmall(CrossRefKeyColDeferrabilityIndex, Ord(ikNotDeferrable))
-      else
-        Result.UpdateSmall(CrossRefKeyColDeferrabilityIndex, Ord(ikInitiallyDeferred));
-      Result.InsertRow;
+    try
+      while Next do
+      begin
+        Result.MoveToInsertRow;
+        Result.UpdatePAnsiChar(CrossRefKeyColPKTableCatalogIndex, GetPAnsiChar(CrossRefKeyColPKTableCatalogIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColPKTableSchemaIndex, GetPAnsiChar(CrossRefKeyColPKTableSchemaIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColPKTableNameIndex, GetPAnsiChar(CrossRefKeyColPKTableNameIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColPKColumnNameIndex, GetPAnsiChar(CrossRefKeyColPKColumnNameIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColFKTableCatalogIndex, GetPAnsiChar(CrossRefKeyColFKTableCatalogIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColFKTableSchemaIndex, GetPAnsiChar(CrossRefKeyColFKTableSchemaIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColFKTableNameIndex, GetPAnsiChar(CrossRefKeyColFKTableNameIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColFKColumnNameIndex, GetPAnsiChar(CrossRefKeyColFKColumnNameIndex, Len), Len);
+        Result.UpdateSmall(CrossRefKeyColKeySeqIndex, GetSmall(CrossRefKeyColKeySeqIndex));
+        Result.UpdateSmall(CrossRefKeyColUpdateRuleIndex, Ord(GetRuleType(GetString(CrossRefKeyColUpdateRuleIndex))));
+        Result.UpdateSmall(CrossRefKeyColDeleteRuleIndex, Ord(GetRuleType(GetString(CrossRefKeyColDeleteRuleIndex))));
+        Result.UpdatePAnsiChar(CrossRefKeyColFKNameIndex, GetPAnsiChar(CrossRefKeyColFKNameIndex, Len), Len);
+        Result.UpdatePAnsiChar(CrossRefKeyColPKNameIndex, GetPAnsiChar(CrossRefKeyColPKNameIndex, Len), Len);
+        if GetString(CrossRefKeyColDeferrabilityIndex) = 'NO' then
+          Result.UpdateSmall(CrossRefKeyColDeferrabilityIndex, Ord(ikNotDeferrable))
+        else
+          Result.UpdateSmall(CrossRefKeyColDeferrabilityIndex, Ord(ikInitiallyDeferred));
+        Result.InsertRow;
+      end;
+    finally
+      Close;
     end;
-    Close;
   end;
 end;
 
@@ -2352,41 +2366,44 @@ begin
     {$IFDEF WITH_VAR_INIT_WARNING}Len := 0;{$ENDIF}
     with GetConnection.CreateStatement.ExecuteQuery(SQL) do
     begin
-      while Next do
-      begin
-        // The expressions column contains a comma list of column names
-        Expressions := Trim(GetString(Expressions_Index));
-        if ((Length(Expressions) > 0) and
-            (Expressions[1] = '[') and
-            (Expressions[Length(Expressions)] = ']')) then
-          Expressions := Copy(Expressions, 2, Length(Expressions) - 2);
-        PutSplitString(ColumnStringList, Expressions, ',');
-        for Index := 0 to ColumnStringList.Count - 1 do
+      try
+        while Next do
         begin
-          Result.MoveToInsertRow;
-          if FConSettings.ClientCodePage.Encoding = ceUTF16 then begin
-            Result.UpdatePWideChar(CatalogNameIndex, GetPWideChar(CatalogNameIndex, Len), Len);
-            Result.UpdatePWideChar(SchemaNameIndex, GetPWideChar(SchemaNameIndex, Len), Len);
-            Result.UpdatePWideChar(TableNameIndex, GetPWideChar(TableNameIndex, Len), Len);
-            Result.UpdatePWideChar(IndexInfoColIndexNameIndex, GetPWideChar(IndexName_Index, Len), Len);
-          end else begin
-            Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(CatalogNameIndex, Len), Len);
-            Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(SchemaNameIndex, Len), Len);
-            Result.UpdatePAnsiChar(TableNameIndex, GetPAnsiChar(TableNameIndex, Len), Len);
-            Result.UpdatePAnsiChar(IndexInfoColIndexNameIndex, GetPAnsiChar(IndexName_Index, Len), Len);
+          // The expressions column contains a comma list of column names
+          Expressions := Trim(GetString(Expressions_Index));
+          if ((Length(Expressions) > 0) and
+              (Expressions[1] = '[') and
+              (Expressions[Length(Expressions)] = ']')) then
+            Expressions := Copy(Expressions, 2, Length(Expressions) - 2);
+          PutSplitString(ColumnStringList, Expressions, ',');
+          for Index := 0 to ColumnStringList.Count - 1 do
+          begin
+            Result.MoveToInsertRow;
+            if FConSettings.ClientCodePage.Encoding = ceUTF16 then begin
+              Result.UpdatePWideChar(CatalogNameIndex, GetPWideChar(CatalogNameIndex, Len), Len);
+              Result.UpdatePWideChar(SchemaNameIndex, GetPWideChar(SchemaNameIndex, Len), Len);
+              Result.UpdatePWideChar(TableNameIndex, GetPWideChar(TableNameIndex, Len), Len);
+              Result.UpdatePWideChar(IndexInfoColIndexNameIndex, GetPWideChar(IndexName_Index, Len), Len);
+            end else begin
+              Result.UpdatePAnsiChar(CatalogNameIndex, GetPAnsiChar(CatalogNameIndex, Len), Len);
+              Result.UpdatePAnsiChar(SchemaNameIndex, GetPAnsiChar(SchemaNameIndex, Len), Len);
+              Result.UpdatePAnsiChar(TableNameIndex, GetPAnsiChar(TableNameIndex, Len), Len);
+              Result.UpdatePAnsiChar(IndexInfoColIndexNameIndex, GetPAnsiChar(IndexName_Index, Len), Len);
+            end;
+            Result.UpdateBoolean(IndexInfoColNonUniqueIndex, GetBoolean(Uniqueness_Index));
+            //Result.UpdateNull(IndexInfoColIndexQualifierIndex);
+            Result.UpdateInt(IndexInfoColTypeIndex, 3);
+            Result.UpdateString(IndexInfoColColumnNameIndex, Trim(ColumnStringList[Index]));
+            Result.UpdateInt(IndexInfoColOrdPositionIndex, Index + 1);
+            Result.UpdateString(IndexInfoColAscOrDescIndex, 'A');
+            Result.UpdateInt(IndexInfoColCardinalityIndex, 0);
+            Result.UpdateInt(IndexInfoColPagesIndex, 0);
+            Result.InsertRow;
           end;
-          Result.UpdateBoolean(IndexInfoColNonUniqueIndex, GetBoolean(Uniqueness_Index));
-          //Result.UpdateNull(IndexInfoColIndexQualifierIndex);
-          Result.UpdateInt(IndexInfoColTypeIndex, 3);
-          Result.UpdateString(IndexInfoColColumnNameIndex, Trim(ColumnStringList[Index]));
-          Result.UpdateInt(IndexInfoColOrdPositionIndex, Index + 1);
-          Result.UpdateString(IndexInfoColAscOrDescIndex, 'A');
-          Result.UpdateInt(IndexInfoColCardinalityIndex, 0);
-          Result.UpdateInt(IndexInfoColPagesIndex, 0);
-          Result.InsertRow;
-        end;
-      end;  // While next
-      Close;
+        end;  // While next
+      finally
+        Close;
+      end;
     end;   // with
   finally
     ColumnStringList.Free;
