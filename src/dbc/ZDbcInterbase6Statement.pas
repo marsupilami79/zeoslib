@@ -70,6 +70,7 @@ type
   private
     FResultXSQLDA: IZSQLDA; //the out param or resultset Interface
     FIBConnection: IZInterbase6Connection; //the IB/FB connection interface
+    FIBTransaction: IZInterbaseFirebirdTransaction; //the IB/FB transaction interface
     FParamSQLData: IZParamsSQLDA;//the in param Interface
     FParamXSQLDA: PXSQLDA;
     FPlainDriver: TZInterbasePlainDriver; //the api holder object of the provider
@@ -104,6 +105,7 @@ type
 
     function LobTransactionEqualsToActiveTransaction(const Lob: IZInterbaseFirebirdLob): Boolean; override;
   public
+    property IBTransaction : IZInterbaseFirebirdTransaction read FIBTransaction write FIBTransaction;
     /// <summary>Constructs this object and assignes the main properties.</summary>
     /// <param>"Connection" the IZInterbase6Connection interface which creates
     ///  this object.</param>
@@ -203,7 +205,10 @@ begin
     if DriverManager.HasLoggingListener then
       DriverManager.LogMessage(lcBindPrepStmt,Self);
     RestartTimer;
-    ISC_TR_HANDLE := FIBConnection.GetTrHandle;
+    if Assigned(FIBTransaction) and (FIBTransaction.QueryInterface(IZIBTransaction, Transaction) = S_OK)  then
+      ISC_TR_HANDLE := Transaction.GetTrHandle
+    else
+      ISC_TR_HANDLE := FIBConnection.GetTrHandle;
     dialect := FIBConnection.GetDialect;
     if (FStatementType = stExecProc)
     then iError := FPlainDriver.isc_dsql_execute2(@FStatusVector, ISC_TR_HANDLE,
@@ -292,6 +297,7 @@ constructor TZAbstractInterbase6PreparedStatement.Create(const Connection: IZInt
 begin
   inherited Create(Connection, SQL, Info);
   FIBConnection := Connection;
+  FIBTransaction := nil;
   FPlainDriver := TZInterbasePlainDriver(FIBConnection.GetIZPlainDriver.GetInstance);
   ResultSetType := rtForwardOnly;
   FStmtHandle := 0;
