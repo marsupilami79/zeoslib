@@ -393,40 +393,39 @@ end;
 
 procedure TZDbcDuckDBConnection.Commit;
 begin
-  raise Exception.Create('Transactions are not supported yet.');
-  {
-  if not Closed then
-    if not GetAutoCommit then begin
-      FConnIntf.Commit;
-      Dec(FTransactionLevel);
-      AutoCommit := FTransactionLevel = 0;
-    end else
-      raise EZSQLException.Create(SInvalidOpInAutoCommit);
-  }
+  // raise Exception.Create('Transactions are not supported yet.');
+  if Closed then
+    raise EZSQLException.Create(SConnectionIsNotOpened);
+  if AutoCommit then
+    raise EZSQLException.Create(SCannotUseCommit);
+  ExecuteImmediat('COMMIT', lcTransaction);
+  AutoCommit := not FRestartTransaction;
 end;
 
 procedure TZDbcDuckDBConnection.Rollback;
 begin
-  raise Exception.Create('Transactions are not supported yet.');
-  {
-  if not Closed then
-    if not GetAutoCommit then begin
-      FConnIntf.Rollback;
-      Dec(FTransactionLevel);
-      AutoCommit := FTransactionLevel = 0;
-    end else
-      raise EZSQLException.Create(SInvalidOpInAutoCommit);
-  }
+  // raise Exception.Create('Transactions are not supported yet.');
+  if Closed then
+    raise EZSQLException.Create(SConnectionIsNotOpened);
+  if AutoCommit then
+    raise EZSQLException.Create(SCannotUseRollback);
+  ExecuteImmediat('ROLLBACK', lcTransaction);
+  AutoCommit := not FRestartTransaction;
 end;
 
 function TZDbcDuckDBConnection.StartTransaction: Integer;
 begin
-  raise Exception.Create('Transactions are not supported yet.');
-  {
-  Result := FConnIntf.StartTransaction;
-  AutoCommit := False;
-  FTransactionLevel := Result;
-  }
+  // raise Exception.Create('Transactions are not supported yet.');
+  if Closed then
+    Open;
+  if AutoCommit then begin
+    // Docs say to use "begin transaction" but note that "start transaction" also seems to work.
+    ExecuteImmediat('BEGIN TRANSACTION', lcTransaction);
+    AutoCommit := False;
+    Result := 1;
+  end
+  else
+    raise EZSQLException.Create('DuckDB does not support savepoints or nested transactions.');
 end;
 
 function TZDbcDuckDBConnection.GetTransactionLevel: Integer;
