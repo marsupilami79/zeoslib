@@ -1530,7 +1530,7 @@ begin
       Result.UpdateRawByteString(CatalogNameIndex, {$IFDEF UNICODE}Raw_Schema{$ELSE}Temp_scheme{$ENDIF});
       Result.UpdateRawByteString(TableNameIndex, {$IFDEF UNICODE}Raw_Table{$ELSE}Temp_Table{$ENDIF});
       Result.UpdatePAnsiChar(PrimaryKeyColumnNameIndex, GetPAnsiChar(name_index, Len), Len);
-      Result.UpdateInt(PrimaryKeyKeySeqIndex, GetInt(cid_index)+1);
+      Result.UpdateInt(PrimaryKeyKeySeqIndex, GetInt(pk_index));
       Result.InsertRow;
     end;
     Close;

@@ -63,7 +63,7 @@ uses
 
 type
 
-  {** Implements DBC Proxy Driver. }
+  {** Implements DBC DuckDb Driver. }
   TZDbcDuckDBDriver = class(TZAbstractDriver)
   public
     constructor Create; override;
@@ -75,15 +75,15 @@ type
     function GetStatementAnalyser: IZStatementAnalyser; override;
   end;
 
-  {** Represents a DBC Proxy specific connection interface. }
+  {** Represents a DBC DuckDb specific connection interface. }
   IZDbcDuckDBConnection = interface (IZConnection)
-    ['{C6ACB283-1126-426B-9637-B4CFD430BB33}']
+    ['{ABA70EDA-E0E4-4886-8FA5-53D3A8D4607B}']
     function GetPlainDriver: TZDuckDBPlainDriver;
     function GetConnectionHandle: TDuckDB_Connection;
     procedure CheckDuckDbError(AResult: PDuckDB_Result);
   end;
 
-  {** Implements DBC Proxy Database Connection. }
+  {** Implements DBC DuckDb Database Connection. }
 
   { TZDuckDBConnection }
 
@@ -308,7 +308,7 @@ begin
   Result := TZGenericStatementAnalyser.Create; { thread save! Allways return a new Analyser! }
 end;
 
-{ TZDbcProxyConnection }
+{ TZDbcDuckDbConnection }
 
 procedure TZDbcDuckDBConnection.CheckDuckDBError(Res: TDuckDB_State; AMessage: String);
 begin
@@ -393,40 +393,39 @@ end;
 
 procedure TZDbcDuckDBConnection.Commit;
 begin
-  raise Exception.Create('Transactions are not supported yet.');
-  {
-  if not Closed then
-    if not GetAutoCommit then begin
-      FConnIntf.Commit;
-      Dec(FTransactionLevel);
-      AutoCommit := FTransactionLevel = 0;
-    end else
-      raise EZSQLException.Create(SInvalidOpInAutoCommit);
-  }
+  // raise Exception.Create('Transactions are not supported yet.');
+  if Closed then
+    raise EZSQLException.Create(SConnectionIsNotOpened);
+  if AutoCommit then
+    raise EZSQLException.Create(SCannotUseCommit);
+  ExecuteImmediat('COMMIT', lcTransaction);
+  AutoCommit := not FRestartTransaction;
 end;
 
 procedure TZDbcDuckDBConnection.Rollback;
 begin
-  raise Exception.Create('Transactions are not supported yet.');
-  {
-  if not Closed then
-    if not GetAutoCommit then begin
-      FConnIntf.Rollback;
-      Dec(FTransactionLevel);
-      AutoCommit := FTransactionLevel = 0;
-    end else
-      raise EZSQLException.Create(SInvalidOpInAutoCommit);
-  }
+  // raise Exception.Create('Transactions are not supported yet.');
+  if Closed then
+    raise EZSQLException.Create(SConnectionIsNotOpened);
+  if AutoCommit then
+    raise EZSQLException.Create(SCannotUseRollback);
+  ExecuteImmediat('ROLLBACK', lcTransaction);
+  AutoCommit := not FRestartTransaction;
 end;
 
 function TZDbcDuckDBConnection.StartTransaction: Integer;
 begin
-  raise Exception.Create('Transactions are not supported yet.');
-  {
-  Result := FConnIntf.StartTransaction;
-  AutoCommit := False;
-  FTransactionLevel := Result;
-  }
+  // raise Exception.Create('Transactions are not supported yet.');
+  if Closed then
+    Open;
+  if AutoCommit then begin
+    // Docs say to use "begin transaction" but note that "start transaction" also seems to work.
+    ExecuteImmediat('BEGIN TRANSACTION', lcTransaction);
+    AutoCommit := False;
+    Result := 1;
+  end
+  else
+    raise EZSQLException.Create('DuckDB does not support savepoints or nested transactions.');
 end;
 
 function TZDbcDuckDBConnection.GetTransactionLevel: Integer;
