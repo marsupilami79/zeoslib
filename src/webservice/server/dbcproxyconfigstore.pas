@@ -16,7 +16,7 @@ uses
       function GetSecurityConfig(const Name: String): IZDbcProxyKeyValueStore;
       function GetDatbaseConfig(const Name: String): IZDbcProxyKeyValueStore;
       // Constructs the DBC layer URL
-      function ConstructUrl(ConfigName, UserName, Password: String; CheckSecurity: Boolean = True): String; virtual; abstract;
+      function ConstructUrl(ConfigName, UserName, Password: String; CheckSecurity: Boolean = True): String;
 
       function GetUseSSL: Boolean;
       property UseSSL: Boolean read GetUseSSL;
