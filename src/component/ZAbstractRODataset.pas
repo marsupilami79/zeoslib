@@ -76,7 +76,7 @@ uses
   TypInfo, {$IFDEF MSEgui}mclasses, mdb{$ELSE}DB{$ENDIF},
   {$IFDEF WITH_GENERIC_TLISTTFIELD}Generics.Collections,{$ENDIF}
   {$IFNDEF NO_UNIT_CONTNRS}Contnrs,{$ENDIF}
-  ZSysUtils, ZCompatibility, ZExpression, ZClasses,
+  ZSysUtils, ZCompatibility, ZExpression, ZClasses, ZDbcInterbase6Statement, ZDbcFirebirdInterbase,
   ZDbcIntfs, ZDbcCache, ZDbcCachedResultSet, ZTokenizer,
   ZAbstractConnection, ZDatasetUtils, ZSqlStrings, ZFormatSettings, ZTransaction, ZExceptions
   {$IFNDEF DISABLE_ZPARAM},ZDatasetParam{$ENDIF};
@@ -3759,6 +3759,8 @@ begin
     end;
     {$ELSE}
     Result := TxnCon.PrepareStatementWithParams(SQL, Temp);
+    if Assigned(FTransaction) and (Result is TZInterbase6PreparedStatement) then // assing transaction for IB/FB 
+      TZInterbase6PreparedStatement(Result).IBTransaction := IZInterbaseFirebirdTransaction(Txn); 
     {$ENDIF}
   finally
     Temp.Free;
