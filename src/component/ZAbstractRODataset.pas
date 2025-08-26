@@ -5384,6 +5384,8 @@ begin
 
       if Mode <> bmRead then
         Blob.SetOnUpdateHandler(OnBlobUpdate, NativeInt(Field));
+      if Mode = bmWrite then 
+        Result.Size := 0;
     end;
   end;
 
