@@ -72,7 +72,7 @@ uses
   FmtBCD,
   ZDbcIntfs, ZDbcResultSet, ZCompatibility, ZDbcResultsetMetadata,
   ZDbcGenericResolver, ZDbcCachedResultSet, ZDbcCache, ZDbcDBLib,
-  ZPlainDBLibDriver;
+  ZPlainDbLibDriver;
 
 type
   {$IFNDEF ZEOS_DISABLE_DBLIB} //if set we have an empty unit

@@ -1214,7 +1214,7 @@ type
   TDbLibMessageHandler = class; //forward
   {$ENDIF TEST_CALLBACK}
   TDBLibraryVendorType = (lvtFreeTDS, lvtMS, lvtSybase);
-  TZDBLIBPLainDriver = class(TZAbstractPlainDriver, IZDBLibPlainDriver)
+  TZDBLIBPLainDriver = class(TZAbstractPlainDriver{$IFDEF MSWINDOWS}, IZDBLibPlainDriver{$ENDIF})
   private
     {$IFDEF TEST_CALLBACK}
     FSQLErrorHandlerList: TZDBLibErrorList;
