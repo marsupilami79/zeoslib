@@ -1151,7 +1151,7 @@ type
   {** Represents a generic interface to DBLIB native API. }
   IZDBLibPlainDriver = interface (IZPlainDriver)
     ['{7731C3B4-0608-4B6B-B089-240AC43A3463}']
-    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE;
+    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE; cdecl;
   end;
 
   TDBERRHANDLE_PROC_cdecl = function(Proc: PDBPROCESS; Severity, DbErr, OsErr: Integer;
@@ -1511,7 +1511,7 @@ type
 
     function dbSetLoginTime(Seconds: Integer): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
     function dbSetLName(Login: PLOGINREC; Value: PAnsiChar; Item: Integer): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
-    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
+    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE; cdecl; //{$IFDEF WITH_INLINE}inline; {$ENDIF}
     function dbSetTime(Seconds: Integer): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
     function dbSetOpt(dbProc: PDBPROCESS; Option: Integer; Char_Param: PAnsiChar; Int_Param: Integer): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
     function dbUse(dbProc: PDBPROCESS; dbName: PAnsiChar): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
@@ -1600,12 +1600,13 @@ type
     dbRetType: function(dbProc: PDBPROCESS; RetNum: Integer): DBINT; cdecl;
     dbSetLoginTime: function(Seconds: Integer): RETCODE; cdecl;
     dbSetLName: function(Login: PLOGINREC; Value: PAnsiChar; Item: Integer): RETCODE; cdecl;
-    dbSetMaxprocs: function(MaxProcs: DBINT): RETCODE; cdecl;
+    FDbSetMaxprocs: function(MaxProcs: DBINT): RETCODE; cdecl;
     dbSetTime: function(Seconds: DBINT): RETCODE; cdecl;
     dbSetOpt: function(dbProc: PDBPROCESS; Option: Integer; Char_Param: PAnsiChar; Int_Param: Integer): RETCODE; cdecl;
     dbUse: function(dbProc: PDBPROCESS; dbName: PAnsiChar): RETCODE; cdecl;
     dbvarylen: function(Proc: PDBPROCESS; Column: Integer): DBBOOL; cdecl;
     dbversion: function: PAnsiChar; cdecl;
+    function dbSetMaxprocs(MaxProcs: SmallInt): RETCODE; cdecl;
     {$ENDIF}
   public { macros }
     function dbSetLApp(Login: PLOGINREC; AppName: PAnsiChar): RETCODE; {$IFDEF WITH_INLINE}inline; {$ENDIF}
@@ -2752,6 +2753,11 @@ begin
   then Result := FdbSetTime(Seconds)
   else Result := FdbSetTime_stdcall(Seconds);
 end;
+{$ELSE}
+function TZDBLIBPLainDriver.dbSetMaxprocs(MaxProcs: SmallInt): RETCODE;
+begin
+  Result := FDbSetMaxprocs(MaxProcs);
+end;
 {$ENDIF MSWINDOWS}
 
 function TZDBLIBPLainDriver.dbsetversion(Version: DBINT): RETCODE;
@@ -2999,7 +3005,7 @@ begin
           @{$IFDEF MSWINDOWS}Fdbcurrow{$ELSE}dbcurrow{$ENDIF} := GetAddress('dbcurrow');
           @{$IFDEF MSWINDOWS}Fdbfirstrow{$ELSE}dbfirstrow{$ENDIF} := GetAddress('dbfirstrow');
           @{$IFDEF MSWINDOWS}Fdbclose_SYB{$ELSE}dbclose{$ENDIF} := GetAddress('dbclose'); //is a procedure
-          @{$IFDEF MSWINDOWS}Fdbsetmaxprocs_I{$ELSE}dbSetMaxprocs{$ENDIF} := GetAddress('dbsetmaxprocs'); //uses DBINT
+          @{$IFDEF MSWINDOWS}Fdbsetmaxprocs_I{$ELSE}FDbSetMaxprocs{$ENDIF} := GetAddress('dbsetmaxprocs'); //uses DBINT
           @{$IFDEF MSWINDOWS}Fdbloginfree{$ELSE}dbloginfree{$ENDIF} := GetAddress('dbloginfree', True); //name diff to ms
           //@{$IFDEF MSWINDOWS}Fdbcolbrowse_SYB{$ELSE}dbcolbrowse{$ENDIF} := GetAddress('dbcolbrowse'); //no FreeTDS
           @{$IFDEF MSWINDOWS}FdbMoreCmds{$ELSE}dbMoreCmds{$ENDIF} := GetAddress('dbmorecmds'); //name diff to ms
@@ -3031,7 +3037,7 @@ begin
           if not Assigned({$IFDEF MSWINDOWS}Fdbfirstrow_stdcall{$ELSE}dbfirstrow{$ENDIF}) then
             @{$IFDEF MSWINDOWS}Fdbfirstrow_stdcall{$ELSE}dbfirstrow{$ENDIF} := GetAddress('dbfirstrow'); //lowercase since 15+
           @{$IFDEF MSWINDOWS}Fdbclose_stdcall{$ELSE}dbclose{$ENDIF} := GetAddress('dbclose');
-          @{$IFDEF MSWINDOWS}Fdbsetmaxprocs_stdcall{$ELSE}dbSetMaxprocs{$ENDIF} := GetAddress('dbsetmaxprocs');
+          @{$IFDEF MSWINDOWS}Fdbsetmaxprocs_stdcall{$ELSE}FDbSetMaxprocs{$ENDIF} := GetAddress('dbsetmaxprocs');
           @{$IFDEF MSWINDOWS}Fdbloginfree_stdcall{$ELSE}dbloginfree{$ENDIF} := GetAddress('dbloginfree', True); //name diff
           @{$IFDEF MSWINDOWS}Fdbcolbrowse_stdcall{$ELSE}dbcolbrowse{$ENDIF} := GetAddress('dbcolbrowse'); //no FreeTDS
           @{$IFDEF MSWINDOWS}FdbMoreCmds_stdcall{$ELSE}dbMoreCmds{$ENDIF} := GetAddress('DBMORECMDS'); //uppercase
