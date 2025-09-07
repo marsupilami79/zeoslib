@@ -729,7 +729,7 @@ var
 
 function GetBindOffsets(IsMariaDB: Boolean; Version: Integer): PMYSQL_BINDOFFSETS;
 begin
-  if IsMariaDB and (Version >= 100207) then
+  if IsMariaDB and ((Version < 50100) or (Version >= 100207)) then
     result := @MARIADB_BIND1027_Offset
   else if (Version >= 50100) or IsMariaDB {they start with 100000} then
     result := @MYSQL_BIND51_Offset

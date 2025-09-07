@@ -1755,7 +1755,7 @@ begin
   if ((Status <> PGRES_COMMAND_OK) and (Status = PGRES_EMPTY_QUERY)) or DriverManager.HasLoggingListener then
     FLogMessage := ZRawToUnicode(SQL, ConSettings.ClientCodePage.CP);
   {$ENDIF}
-  if (Status = PGRES_COMMAND_OK) or (Status = PGRES_EMPTY_QUERY) then begin
+  if (Status = PGRES_COMMAND_OK) or (Status = PGRES_TUPLES_OK) or (Status = PGRES_EMPTY_QUERY) then begin
     FPlainDriver.PQclear(QueryHandle);
     if DriverManager.HasLoggingListener then
       DriverManager.LogMessage(LoggingCategory, URL.Protocol, {$IFDEF UNICODE}FlogMessage{$ELSE}SQL{$ENDIF});
