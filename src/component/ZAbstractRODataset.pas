@@ -2747,7 +2747,7 @@ begin
       ftTime: Result := TZTimeField;
       ftDate: Result := TZDateField;
       ftDateTime: Result := TZDateTimeField;
-      ftLargeInt: if TZFieldDef(FieldDef).FSQLType = stLong
+      ftLargeInt{$IFDEF WITH_FTLARGEUINT}, ftLargeUint{$ENDIF}: if TZFieldDef(FieldDef).FSQLType = stLong
           then Result := TZInt64Field
           else {$IFNDEF WITH_FTLONGWORD}if TZFieldDef(FieldDef).FSQLType = stLongWord
             then Result := TZCardinalField
@@ -2893,6 +2893,11 @@ begin
           ftLargeInt: if FResultSetMetadata.GetColumnType(ColumnIndex) = stULong
             then PUInt64(Buffer)^ := ResultSet.GetULong(ColumnIndex)
             else PInt64(Buffer)^ := ResultSet.GetLong(ColumnIndex);
+          {$IFDEF WITH_FTLARGEUINT}
+          ftLargeUint: if FResultSetMetadata.GetColumnType(ColumnIndex) = stULong
+            then PUInt64(Buffer)^ := ResultSet.GetULong(ColumnIndex)
+            else PInt64(Buffer)^ := ResultSet.GetLong(ColumnIndex);
+          {$ENDIF}
           {$IFDEF WITH_FTGUID}
           ftGUID:
             begin
@@ -3058,6 +3063,11 @@ jmpMoveW:   if Result then begin
         ftLargeInt: if FResultSetMetadata.GetColumnType(ColumnIndex) = stULong
             then PUInt64(Buffer)^ := RowAccessor.GetULong(ColumnIndex, Result)
             else PInt64(Buffer)^ := RowAccessor.GetLong(ColumnIndex, Result);
+        {$IFDEF WITH_FTLARGEUINT}
+        ftLargeUint: if FResultSetMetadata.GetColumnType(ColumnIndex) = stULong
+            then PUInt64(Buffer)^ := RowAccessor.GetULong(ColumnIndex, Result)
+            else PInt64(Buffer)^ := RowAccessor.GetLong(ColumnIndex, Result);
+        {$ENDIF}
         {$IFDEF WITH_FTGUID}
         ftGUID:
           begin
@@ -3276,6 +3286,11 @@ begin
           ftLargeInt: if FResultSetMetaData.GetColumnType(ColumnIndex) = stULong
               then RowAccessor.SetULong(ColumnIndex, PUInt64(Buffer)^)
               else RowAccessor.SetLong(ColumnIndex, PInt64(Buffer)^);
+          {$IFDEF WITH_FTLARGEUINT}
+          ftLargeUint: if FResultSetMetaData.GetColumnType(ColumnIndex) = stULong
+              then RowAccessor.SetULong(ColumnIndex, PUInt64(Buffer)^)
+              else RowAccessor.SetLong(ColumnIndex, PInt64(Buffer)^);
+          {$ENDIF}
           {$IFDEF WITH_FTGUID}
           ftGUID: begin
               ValidGUIDToBinary(PAnsiChar(Buffer), @UID.D1);
@@ -3404,6 +3419,11 @@ begin
         ftLargeInt: if FResultSetMetaData.GetColumnType(ColumnIndex) = stULong
             then FResultSet.UpdateULong(ColumnIndex, PUInt64(Buffer)^)
             else FResultSet.UpdateLong(ColumnIndex, PInt64(Buffer)^);
+        {$IFDEF WITH_FTLARGEUINT}
+        ftLargeUint: if FResultSetMetaData.GetColumnType(ColumnIndex) = stULong
+            then FResultSet.UpdateULong(ColumnIndex, PUInt64(Buffer)^)
+            else FResultSet.UpdateLong(ColumnIndex, PInt64(Buffer)^);
+        {$ENDIF}
         {$IFDEF WITH_FTGUID}
         ftGUID: begin
             ValidGUIDToBinary(PAnsiChar(Buffer), @UID.D1);
@@ -5989,6 +6009,9 @@ const
     , ftLongWord, ftShortint, ftByte, ftExtended, ftUnknown{ftConnection}, ftUnknown{ftParams}, ftBlob{ftStream} //42..48
 {$IF CompilerVersion >= 21} //additional Types since D2010
     , ftDateTime{ftTimeStampOffset}, ftUnknown{ftObject}, ftSingle //49..51
+{$IF CompilerVersion >= 37} //additional type since Delphi 13 Florence
+    , ftLargeUint
+{$IFEND CompilerVersion >= 37}
 {$IFEND CompilerVersion >= 21}
 {$IFEND CompilerVersion >= 20}
 {$IFEND CompilerVersion >= 18}
@@ -6447,7 +6470,11 @@ end;
 constructor TZUInt64Field.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
+  {$IFDEF WITH_FTLARGEUINT}
+  SetDataType(ftLargeUint);
+  {$ELSE}
   SetDataType(ftLargeint); //we do not have a datatype for unsigend longlong ordinals until XE10.3
+  {$ENDIF}
   ValidChars := ['+', '0'..'9']
 end;
 
