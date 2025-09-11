@@ -342,8 +342,12 @@ begin
       Result := ftInteger;
     stLongWord:
       Result := {$IFDEF WITH_FTLONGWORD}ftLongWord{$ELSE}ftLargeInt{$ENDIF}; // !
-    stLong, stULong:
+    stLong{$IFNDEF WITH_FTLARGEUINT}, stULong{$ENDIF}:
       Result := ftLargeInt;
+    {$IFDEF WITH_FTLARGEUINT}
+    stULong:
+      Result := ftLargeUint;
+    {$ENDIF}
     {$IFDEF WITH_FTSINGLE}
     stFloat:
       Result := ftSingle;
@@ -439,6 +443,10 @@ begin
     {$ENDIF}
     ftLargeInt:
       Result := stLong;
+    {$IFDEF WITH_FTLARGEUINT}
+    ftLargeUint:
+      Result := stULong;
+    {$ENDIF}
 //    ftCurrency:
 //      Result := stBigDecimal;
     ftBCD:
@@ -662,7 +670,7 @@ begin
         {$IFDEF WITH_FTLONGWORD}ftLongword:
           ResultValues[I] := EncodeUInteger(ResultSet.GetULong(ColumnIndex));
         {$ENDIF}
-        ftLargeInt: if Metadata.GetColumnType(I{$IFNDEF GENERIC_INDEX}+1{$ENDIF}) = stULong
+        ftLargeInt{$IFNDEF WITH_FTLARGEUINT}, ftLargeUint{$ENDIF}: if Metadata.GetColumnType(I{$IFNDEF GENERIC_INDEX}+1{$ENDIF}) = stULong
           then ResultValues[I] := EncodeUInteger(ResultSet.GetULong(ColumnIndex))
           else ResultValues[I] := EncodeInteger(ResultSet.GetLong(ColumnIndex));
         ftDate, ftTime, ftDateTime:
