@@ -400,6 +400,9 @@
                                             {$IF CompilerVersion >= 36} //Delphi 12 Athens
                                               {$DEFINE NATIVEINT_WEAK_REFERENCE} // TMemoryStream.Realloc uses NativeInt instead of Longint
                                               {$UNDEF MISS_MATH_NATIVEUINT_MIN_MAX_OVERLOAD}
+                                              {$IF CompilerVersion >= 37} //Delphi 13 Florence
+                                                {$DEFINE WITH_FTLARGEUINT}
+                                              {$IFEND CompilerVersion >= 37} // Delphi 13 Athens
                                             {$IFEND CompilerVersion >= 36} // Delphi 12 Athens
                                           {$IFEND CompilerVersion >= 35} // Delphi 11 Alexandria
                                         {$IFEND CompilerVersion >= 34}
