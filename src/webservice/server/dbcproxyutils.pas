@@ -105,7 +105,6 @@ end;
 
 procedure decodeParameters(const ParamsNode: TDOMNode; Statement: IZPreparedStatement);
 var
-  ParamNodes: TDOMNodeList;
   ParamNode: TDOMNode;
   IsNull: Boolean;
   ParamTypeStr: String;
@@ -144,9 +143,9 @@ var
 
 begin
   ParamType := stBoolean;
-  for x := 1 to ParamNodes.Count do begin
+  for x := 1 to ParamsNode.GetChildNodes.Count do begin
     ParamIdx := x - 1 + FirstDbcIndex;
-    ParamNode := ParamNodes.Item[x - 1];
+    ParamNode := ParamsNode.GetChildNodes.Item[x - 1];
     IsNull := StrToBoolDef(GetNodeValue(ParamNode.Attributes.GetNamedItem('isnull')), false);
     ParamTypeStr := GetNodeValue(ParamNode.Attributes.GetNamedItem('type'));
     ParamType := TZSQLType(GetEnumValue(TypeInfo(ParamType), ParamTypeStr));
