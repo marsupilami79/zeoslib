@@ -72,7 +72,8 @@ uses
   //Zeos drivers:
   ZDbcAdo, ZDbcASA, ZDbcDbLib, ZDbcFirebird, ZDbcInterbase6, ZDbcMySql,
   ZDbcODBCCon, ZDbcOleDB, ZDbcOracle, ZDbcPostgreSql, ZDbcSQLAnywhere,
-  ZDbcSqLite, ZDbcProxyMgmtDriver, DbcProxyStartupProcedures;
+  ZDbcSqLite, ZDbcProxyMgmtDriver, DbcProxyStartupProcedures,
+  ZCbor, zeosproxy_cbor_imp;
 
 type
 
@@ -161,6 +162,8 @@ begin
   try
     AppObject := CreateAppObject;
     AppObject.OnNotifyMessage := OnMessage;
+    CborImp := TZDbcProxyCborImp.Create;
+    AppObject.OnCustomRequest := CborImp.OnCustomRequest;
     WriteLn('Zeos Proxy Server listening at:');
     WriteLn('');
     WriteLn(ConstructServerURL);

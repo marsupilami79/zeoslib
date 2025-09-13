@@ -60,20 +60,21 @@ unit DbcProxyUtils;
 interface
 
 uses
-  Classes, SysUtils, ZDbcIntfs;
+  Classes, SysUtils, ZDbcIntfs, dom;
 
 function encodeConnectionProperties(const Connection: IZConnection): String;
 function encodeDatabaseInfo(const Connection: IZConnection): String;
 
-procedure decodeParameters(const ParamXML: String; Statement: IZPreparedStatement);
-procedure applyConnectionProperties(const Connection: IZConnection; const Properties: String);
+procedure decodeParameters(const ParamXML: String; Statement: IZPreparedStatement); overload;
+procedure decodeParameters(const ParamsNode: TDOMNode; Statement: IZPreparedStatement); overload;
+procedure applyConnectionProperties(const Connection: IZConnection; const Properties: String); overload;
 
 //function ZXMLEncode(Input: String): String;
 
 implementation
 
 uses
-  typinfo, dom, XMLRead, Base64, ZExceptions{$IFDEF ZEOS73UP}, FMTBCD{$ENDIF}, ZDbcXmlUtils;
+  typinfo, XMLRead, Base64, ZExceptions{$IFDEF ZEOS73UP}, FMTBCD{$ENDIF}, ZDbcXmlUtils;
 
 {$IFNDEF FPC}
 const
@@ -86,13 +87,31 @@ procedure DecodeParameters(const ParamXML: String; Statement: IZPreparedStatemen
 var
   Doc: TXMLDocument;
   ParamsNode: TDomNode;
+  Stream: TStringStream;
+begin
+  Stream := TStringStream.Create(ParamXML);
+  try
+    XMLRead.ReadXMLFile(Doc, Stream);
+    try
+      ParamsNode := Doc.GetChildNodes.Item[0];
+      DecodeParameters(ParamsNode, Statement);
+    finally
+      FreeAndNil(Doc);
+    end;
+  finally
+    FreeAndNil(Stream);
+  end;
+end;
+
+procedure decodeParameters(const ParamsNode: TDOMNode; Statement: IZPreparedStatement);
+var
+  ParamNodes: TDOMNodeList;
   ParamNode: TDOMNode;
   IsNull: Boolean;
   ParamTypeStr: String;
   ParamType: TZSQLType;
   ParamValue: String;
   x: Integer;
-  Stream: TStringStream;
   ParamIdx: Integer;
 
   function GetNodeValue(Node: TDomNode): String;
@@ -125,71 +144,59 @@ var
 
 begin
   ParamType := stBoolean;
-  Stream := TStringStream.Create(ParamXML);
-  try
-    XMLRead.ReadXMLFile(Doc, Stream);
-    try
-      ParamsNode := Doc.GetChildNodes.Item[0];
-
-      for x := 1 to ParamsNode.GetChildNodes.Count do begin
-        ParamIdx := x - 1 + FirstDbcIndex;
-        ParamNode := ParamsNode.GetChildNodes.Item[x - 1];
-        IsNull := StrToBoolDef(GetNodeValue(ParamNode.Attributes.GetNamedItem('isnull')), false);
-        ParamTypeStr := GetNodeValue(ParamNode.Attributes.GetNamedItem('type'));
-        ParamType := TZSQLType(GetEnumValue(TypeInfo(ParamType), ParamTypeStr));
-        ParamValue := GetNodeValue(ParamNode.Attributes.GetNamedItem('value'));
-        if IsNull then
-          Statement.SetNull(ParamIdx, ParamType)
-        else begin
-          case ParamType of
-            stBoolean:
-              Statement.SetBoolean(ParamIdx, StrToBool(ParamValue));
-            stByte:
-              Statement.SetByte(ParamIdx, StrToInt(ParamValue));
-            stShort:
-              Statement.SetShort(ParamIdx, StrToInt(ParamValue));
-            stWord:
-              Statement.SetWord(ParamIdx, StrToInt(ParamValue));
-            stSmall:
-              Statement.SetSmall(ParamIdx, StrToInt(ParamValue));
-            stLongWord:
-              Statement.SetUInt(ParamIdx, StrToDWord(ParamValue));
-            stInteger:
-              Statement.SetInt(ParamIdx, StrToInt(ParamValue));
-            stULong:
-              Statement.SetULong(ParamIdx, StrToQWord(ParamValue));
-            stLong:
-              Statement.SetLong(ParamIdx, StrToInt64(ParamValue));
-            stFloat:
-              Statement.SetFloat(ParamIdx, StrToFloat(ParamValue, ZXmlProxyFormatSettings));
-            stDouble:
-              Statement.SetDouble(ParamIdx, StrToFloat(ParamValue, ZXmlProxyFormatSettings));
-            stCurrency:
-              Statement.SetCurrency(ParamIdx, StrToCurr(ParamValue, ZXmlProxyFormatSettings));
-            stBigDecimal:
-              Statement.SetBigDecimal(ParamIdx, StrToFloat(ParamValue, ZXmlProxyFormatSettings));
-            stString, stUnicodeString:
-              Statement.SetString(ParamIdx, ParamValue);
-            stDate:
-              Statement.SetDate(ParamIdx, StrToDate(ParamValue, ZXmlProxyFormatSettings));
-            stTime:
-              Statement.SetTime(ParamIdx, StrToTime(ParamValue, ZXmlProxyFormatSettings));
-            stTimestamp:
-              Statement.SetTimestamp(ParamIdx, StrToDateTime(ParamValue, ZXmlProxyFormatSettings));
-            stAsciiStream, stUnicodeStream:
-              Statement.SetString(ParamIdx, ParamValue);
-            stBinaryStream, stBytes:
-              Statement.SetBytes(ParamIdx, BinaryToBytes(ParamValue));
-            else
-              raise EZSQLException.Create('Conversion of parameter of type ' + ParamTypeStr + ' is not supported (yet).');
-          end;
-        end;
+  for x := 1 to ParamNodes.Count do begin
+    ParamIdx := x - 1 + FirstDbcIndex;
+    ParamNode := ParamNodes.Item[x - 1];
+    IsNull := StrToBoolDef(GetNodeValue(ParamNode.Attributes.GetNamedItem('isnull')), false);
+    ParamTypeStr := GetNodeValue(ParamNode.Attributes.GetNamedItem('type'));
+    ParamType := TZSQLType(GetEnumValue(TypeInfo(ParamType), ParamTypeStr));
+    ParamValue := GetNodeValue(ParamNode.Attributes.GetNamedItem('value'));
+    if IsNull then
+      Statement.SetNull(ParamIdx, ParamType)
+    else begin
+      case ParamType of
+        stBoolean:
+          Statement.SetBoolean(ParamIdx, StrToBool(ParamValue));
+        stByte:
+          Statement.SetByte(ParamIdx, StrToInt(ParamValue));
+        stShort:
+          Statement.SetShort(ParamIdx, StrToInt(ParamValue));
+        stWord:
+          Statement.SetWord(ParamIdx, StrToInt(ParamValue));
+        stSmall:
+          Statement.SetSmall(ParamIdx, StrToInt(ParamValue));
+        stLongWord:
+          Statement.SetUInt(ParamIdx, StrToDWord(ParamValue));
+        stInteger:
+          Statement.SetInt(ParamIdx, StrToInt(ParamValue));
+        stULong:
+          Statement.SetULong(ParamIdx, StrToQWord(ParamValue));
+        stLong:
+          Statement.SetLong(ParamIdx, StrToInt64(ParamValue));
+        stFloat:
+          Statement.SetFloat(ParamIdx, StrToFloat(ParamValue, ZXmlProxyFormatSettings));
+        stDouble:
+          Statement.SetDouble(ParamIdx, StrToFloat(ParamValue, ZXmlProxyFormatSettings));
+        stCurrency:
+          Statement.SetCurrency(ParamIdx, StrToCurr(ParamValue, ZXmlProxyFormatSettings));
+        stBigDecimal:
+          Statement.SetBigDecimal(ParamIdx, StrToFloat(ParamValue, ZXmlProxyFormatSettings));
+        stString, stUnicodeString:
+          Statement.SetString(ParamIdx, ParamValue);
+        stDate:
+          Statement.SetDate(ParamIdx, StrToDate(ParamValue, ZXmlProxyFormatSettings));
+        stTime:
+          Statement.SetTime(ParamIdx, StrToTime(ParamValue, ZXmlProxyFormatSettings));
+        stTimestamp:
+          Statement.SetTimestamp(ParamIdx, StrToDateTime(ParamValue, ZXmlProxyFormatSettings));
+        stAsciiStream, stUnicodeStream:
+          Statement.SetString(ParamIdx, ParamValue);
+        stBinaryStream, stBytes:
+          Statement.SetBytes(ParamIdx, BinaryToBytes(ParamValue));
+        else
+          raise EZSQLException.Create('Conversion of parameter of type ' + ParamTypeStr + ' is not supported (yet).');
       end;
-    finally
-      FreeAndNil(Doc);
     end;
-  finally
-    FreeAndNil(Stream);
   end;
 end;
 

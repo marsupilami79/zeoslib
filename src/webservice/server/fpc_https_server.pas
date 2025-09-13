@@ -32,6 +32,12 @@ uses
 
 type
 
+  TCustomRequestHandler = function (
+          ARequest  : TRequest;
+          AResponse : TResponse;
+          APath     : string
+    ): Boolean of object;
+
   IObjectRef = interface
     ['{B62EC733-999D-4DEC-A69F-B7546A16F661}']
     function GetObject() : TObject;
@@ -53,6 +59,8 @@ type
     FCertificateFileName: String;
     FHostName: String;
     {$ENDIF}
+
+    FOnCustomRequest: TCustomRequestHandler;
   private
     function GetHandleRequestInThread : Boolean;
     function GetListeningPort : Integer;
@@ -105,6 +113,8 @@ type
     property CertificateFileName: String read FCertificateFileName write SetCertificateFileName;
     property HostName: String read FHostName write SetHostName;
     {$ENDIF}
+
+    property OnCustomRequest: TCustomRequestHandler read FOnCustomRequest write FOnCustomRequest;
   end;
 
   { TServerListnerThread }
@@ -143,6 +153,8 @@ type
     {$ENDIF}
   protected
     procedure SetOnNotifyMessage(const AValue : TListnerNotifyMessage);override;
+    function GetOnCustomRequest: TCustomRequestHandler;
+    procedure SetOnCustomRequest(AValue: TCustomRequestHandler);
   public
     constructor Create(
       const AServerIpAddress   : string  = '127.0.0.1';
@@ -164,6 +176,8 @@ type
     property CertificateFileName: String read GetCertificateFileName write SetCertificateFileName;
     property HostName: String read GetHostName write SetHostName;
     {$ENDIF}
+
+    property OnCustomRequest: TCustomRequestHandler read GetOnCustomRequest write SetOnCustomRequest;
   end;
 
 implementation
@@ -264,6 +278,7 @@ var
   trgt,ctntyp, frmt : string;
   rqst : IRequestBuffer;
   inStream : TStringStream;
+  Cnt: String;
 begin
   trgt := ExtractNextPathElement(APath);
   if AnsiSameText(sWSDL,trgt) then
@@ -273,7 +288,8 @@ begin
     end;
   inStream := nil;
   try
-    inStream := TStringStream.Create(ARequest.Content);
+    Cnt := ARequest.Content;
+    inStream := TStringStream.Create(Cnt);
     try
       AResponse.ContentStream := TMemoryStream.Create();
       ctntyp := ARequest.ContentType;
@@ -320,7 +336,8 @@ begin
   AResponse.Server:=FServerSoftware;
   locPath := ARequest.URL;
   locPathPart := ExtractNextPathElement(locPath);
-  if AnsiSameText(sSERVICES_PREFIXE,locPathPart)  then
+  if Assigned(FOnCustomRequest) and not FOnCustomRequest(ARequest, AResponse, locPath) then
+  if AnsiSameText(sSERVICES_PREFIXE,locPathPart) then
     ProcessServiceRequest(ARequest,AResponse,locPath)
   else
     ProcessWSDLRequest(ARequest,AResponse,locPath);
@@ -537,6 +554,18 @@ end;
 function TwstFPHttpsListener.IsActive: Boolean;
 begin
   Result := FWorkerObject.IsActive();
+end;
+
+function TwstFPHttpsListener.GetOnCustomRequest: TCustomRequestHandler;
+begin
+  Result := nil;
+  if Assigned(FWorkerObject) then
+    Result := FWorkerObject.OnCustomRequest;
+end;
+
+procedure TwstFPHttpsListener.SetOnCustomRequest(AValue: TCustomRequestHandler);
+begin
+  FWorkerObject.OnCustomRequest := AValue;
 end;
 
 initialization
