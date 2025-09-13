@@ -69,7 +69,7 @@ implementation
 
 {$IF DEFINED(ENABLE_PROXY) AND DEFINED(ENABLE_INTERNAL_PROXY)}
 
-uses SysUtils, {$IFNDEF NO_SAFECALL}ActiveX, ComObj,{$ENDIF} SOAPHTTPClient, ZExceptions, SOAPHTTPTrans, Types {$IFDEF TCERTIFICATE_HAS_PUBLICKEY}, Net.URLClient, Net.HttpClient{$ENDIF};
+uses SysUtils, ActiveX,{$IFNDEF NO_SAFECALL} ComObj,{$ENDIF} SOAPHTTPClient, ZExceptions, SOAPHTTPTrans, Types {{$IFDEF TCERTIFICATE_HAS_PUBLICKEY}, Net.URLClient, Net.HttpClient{{$ENDIF}, System.Net.HttpClientComponent, ZDbcXmlUtils;
 
 type
   TZDbcProxy = class(TInterfacedObject, IZDbcProxy{$IFNDEF NO_SAFECALL}, ISupportErrorInfo{$ENDIF})
@@ -77,6 +77,8 @@ type
       FService: IZeosProxy;
       FConnectionID: WideString;
       FValidPublicKeys: TStringList;
+      HttpClient: THTTPClient;
+      CBORUrl: String;
       procedure CheckConnected;
       // this is necessary for safecall exception handling
       {$IFNDEF NO_SAFECALL}
@@ -101,6 +103,7 @@ type
       procedure Rollback; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function SetProperties(const Properties : WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function ExecuteStatement(const SQL, Parameters: WideString; const MaxRows: LongWord): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
+      function ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): IStream; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function GetTables(const Catalog, SchemaPattern, TableNamePattern, Types: WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function GetSchemas: WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function GetCatalogs: WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
@@ -210,6 +213,7 @@ var
   MyDbInfo: UnicodeString;
   PropList: TStringList;
   Certs: String;
+  x: Integer;
 begin
   FRIO := THTTPRIO.Create(nil);
   Url := ServiceEndpoint;
@@ -234,6 +238,14 @@ begin
     FConnectionID := FService.Connect(UserName, Password, DbName, MyInProperties, MyOutProperties, MyDbInfo);
     Properties := MyOutProperties;
     DbInfo := MyDbInfo;
+    HttpClient := THttpClient.Create;
+    HttpClient.CustomHeaders['Authorization'] := 'Bearer ' + FConnectionID;
+    x := Pos(WideString('://'), ServiceEndpoint);
+    x := Pos('/', ServiceEndpoint, x + 3);
+    if x > 0 then begin
+      CBORUrl := copy(ServiceEndpoint, 1, x);
+      CBORUrl := CBORUrl + 'ZeosProxy/cborquery';
+    end;
   end else begin
     FreeAndNil(FRIO);
   end;
@@ -244,6 +256,8 @@ begin
  CheckConnected;
  try
    FService.Disconnect(FConnectionID);
+   if Assigned(HttpClient) then
+     FreeAndNil(HttpClient);
  finally
    FConnectionID := '';
  end;
@@ -283,6 +297,36 @@ function TZDbcProxy.ExecuteStatement(const SQL, Parameters: WideString; const Ma
 begin
   CheckConnected;
   Result := FService.ExecuteStatement(FConnectionID, SQL, Parameters, MaxRows);
+end;
+
+function TZDbcProxy.ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): IStream; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
+var
+  Query: String;
+  Req: TStringStream;
+  Res: TMemoryStream;
+begin
+  try
+    Res := TMemoryStream.Create;
+    Query := '<query><sql>';
+    Query := Query + XMLEncode(SQL) + '</sql>';
+    Query := Query + Parameters;
+    Query := Query + '</query>';
+    Req := TStringStream.Create(Query, CP_UTF8);
+    try
+      HttpClient.Put(CBORUrl, Req, Res);
+    finally
+      FreeAndNil(Req);
+    end;
+
+    if Assigned(Res) then
+      Result := TStreamAdapter.Create(Res, soOwned)
+    else
+      Result := nil;
+  except
+    if Assigned(Res) then
+      FreeAndNil(Res);
+    raise;
+  end;
 end;
 
 function TZDbcProxy.GetTables(const Catalog, SchemaPattern, TableNamePattern, Types: WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}

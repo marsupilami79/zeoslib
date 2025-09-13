@@ -58,7 +58,7 @@ interface
 {$IFDEF ENABLE_PROXY}
 
 uses
-  Classes;
+  Classes, ActiveX;
 
   type
   {$IFDEF NO_WIDESTRING}
@@ -77,6 +77,8 @@ uses
     procedure Rollback; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
     function SetProperties(const Properties : WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
     function ExecuteStatement(const SQL, Parameters: WideString; const MaxRows: LongWord): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
+    function ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): IStream; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
+
     function GetTables(const Catalog, SchemaPattern, TableNamePattern, Types: WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
     function GetSchemas: WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
     function GetCatalogs: WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
