@@ -89,7 +89,7 @@ uses
   {synapse}
   {local}zeosproxy, zeosproxy_binder, zeosproxy_imp, DbcProxyUtils,
   DbcProxyConnectionManager, DbcProxyConfigManager, ZDbcProxyManagement,
-  DbcProxyFileLogger, DbcProxyStartupProcedures;
+  DbcProxyFileLogger, DbcProxyStartupProcedures, zeosproxy_cbor_imp;
 
 procedure RegisterDaemon;
 begin
@@ -154,6 +154,8 @@ begin
     zeosproxy_imp.Logger.Debug('Creating Listener...');
     AppObject := CreateAppObject;
     AppObject.OnNotifyMessage := OnMessage;
+    CborImp := TZDbcProxyCborImp.Create;
+    AppObject.OnCustomRequest := CborImp.OnCustomRequest;
     zeosproxy_imp.Logger.Debug('Starting the Proxy...');
     AppObject.Start();
 
