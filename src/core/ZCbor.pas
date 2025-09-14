@@ -270,7 +270,7 @@ implementation
 {$IFNDEF FPC}
   {$IF COMPILERVERSION > 21}
     {$DEFINE HAVE_TFORMATSETTINGS_CREATE}
-  {$ENDIF}
+  {$IFEND}
 {$ENDIF}
 
 uses Math, {$IFNDEF FPC}idCoderMime,{$ENDIF} StrUtils, ZBase64;
@@ -302,7 +302,7 @@ begin
      SetPointer(aData, len);
 end;
 
-function TWrapMemoryStream.Write(const Buffer; Count: Integer): Longint;
+function TWrapMemoryStream.Write(const Buffer; Count: Longint): Longint;
 begin
      raise Exception.Create('Not allowed');
 end;
@@ -356,7 +356,7 @@ var
   wrapMem : TWrapMemoryStream;
   {$ELSE}
   Data: TBytes;
-  {$ENDIF}
+  {$IFEND}
 begin
      if len = 0 then
         exit('');
@@ -377,7 +377,7 @@ begin
      SetLength(Data, len);
      Move(pData^, Data[0], len);
      sFixup := String(ZEncodeBase64(Data));
-     {$ENDIF}
+     {$IFEND}
      Result := Base64UrlFixup(sFixup);
 end;
 
@@ -392,7 +392,7 @@ var
   wrapMem : TWrapMemoryStream;
   {$ELSE}
   Data: TBytes;
-  {$ENDIF}
+  {$IFEND}
 begin
      {$IF NOT DECLARED(ZEncodeBase64)}
      wrapMem := TWrapMemoryStream.Create( pData, len );
@@ -412,7 +412,7 @@ begin
      SetLength(Data, len);
      Move(pData^, Data[0], len);
      Result := String(ZEncodeBase64(Data));
-     {$ENDIF}
+     {$IFEND}
 end;
 
 function Base64Decode( s : string ) : RawByteString;
@@ -452,14 +452,14 @@ begin
   if length(Bytes) > 0 then
     Move(Bytes[0], Result[1], Length(Bytes));
 end;
-{$ENDIF}
+{$IFEND}
 
 function Base64DecodeToBytes( s : string ) : TBytes;
 {$IF NOT DECLARED(ZDecodeBase64)}
 var aWrapStream : TWrapMemoryStream;
     sconvStr : UTF8String;
     lStream : TMemoryStream;
-{$ENDIF}
+{$IFEND}
 begin
      {$IF NOT DECLARED(ZDecodeBase64)}
      sConvStr := UTF8String( s );
@@ -483,7 +483,7 @@ begin
             lStream.Free;
      end;
      aWrapStream.Free;
-     {$ENDIF}
+     {$IFEND}
      Result := ZDecodeBase64(AnsiString(s));
 end;
 
@@ -495,7 +495,7 @@ var sFixup : UTF8String;
     lStream : TMemoryStream;
     {$ELSE}
     Data: TBytes;
-    {$ENDIF}
+    {$IFEND}
 begin
      if s = '' then
         exit('');
@@ -527,7 +527,7 @@ begin
             lStream.Free;
      end;
      aWrapStream.Free;
-     {$ENDIF}
+     {$IFEND}
      Data := ZDecodeBase64(sFixup);
      SetLength(Result, Length(Data));
      Move(Data[0], Result[1], Length(Data));
@@ -834,7 +834,7 @@ begin
      GetLocaleFormatSettings(0, fmt);
      {$ELSE}
      fmt := TFormatSettings.Create;
-     {$IFEND}
+     {$ENDIF}
      fmt.DecimalSeparator := '.';
      //Result := FormatFloat( '%f', fFloatVal, fmt);
      Result := FloatToStr(ffloatVal, fmt);
@@ -1335,7 +1335,7 @@ begin
      uIntVal := abs( fnegIntVal + 1);
 
      // determine "opcode"
-     if {$IFNDEF FPC}Abs{$IFEND}(uIntVal) <= $17 then
+     if {$IFNDEF FPC}Abs{$ENDIF}(uIntVal) <= $17 then
      begin
           opCode := $20 + Byte(uIntVal);
           toStream.WriteBuffer(opCode, sizeof(opCode));
