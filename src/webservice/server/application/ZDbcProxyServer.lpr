@@ -177,6 +177,10 @@ begin
     WriteLn('Stopping the Server...');
     AppObject.Stop()
   finally
+    WriteLn('Freeing internal structures...');
+    StopServer;
+    WriteLn('Freeing the app object...');
+    Flush(StdOut);
     if Assigned(AppObject) then
       FreeAndNil(AppObject);
   end;
@@ -206,7 +210,17 @@ end;
 
 var
   Application: TZDbcProxyServer;
+  HeapTraceFile: String;
 begin
+  {$IF NOT DEFINED(ENABLE_DEBUG_SETTINGS) AND NOT DEFINED(WINDOWS)}
+  HeapTraceFile := '/var/log/zeos-heaptrace-' + FormatDateTime('YYYYMMDDHHNNSS', Now) + '.txt';
+  {$ELSE}
+  HeapTraceFile := ExtractFilePath(ParamStr(0)) + 'zeos-heaptrace-' + FormatDateTime('YYYYMMDDHHNNSS', Now) + '.txt';
+  {$IFEND}
+  {$if declared(UseHeapTrace)}
+  SetHeapTraceOutput(HeapTraceFile);
+  {$ENDIF}
+
   {$IFDEF WINDOWS}
   SetMultiByteConversionCodePage(CP_UTF8);
   {$IFEND}

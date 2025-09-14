@@ -531,9 +531,10 @@ destructor TZChainedSecurityModule.Destroy;
 var
   x: Integer;
 begin
-  for x := 0 to Length(FModuleChain) - 1 do
+  for x := Length(FModuleChain) - 1 downto 0 do
     if Assigned(FModuleChain[x]) then
       FreeAndNil(FModuleChain[x]);
+  SetLength(FModuleChain, 0);
   inherited;
 end;
 
@@ -597,9 +598,10 @@ destructor TZAlternateSecurityModule.Destroy;
 var
   x: Integer;
 begin
-  for x := 0 to Length(FModuleChain) - 1 do
+  for x := Length(FModuleChain) - 1 downto 0 do
     if Assigned(FModuleChain[x]) then
       FreeAndNil(FModuleChain[x]);
+  SetLength(FModuleChain, 0);
   inherited;
 end;
 
