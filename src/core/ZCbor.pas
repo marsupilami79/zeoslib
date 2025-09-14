@@ -37,7 +37,7 @@ interface
 {$MODE DELPHIUNICODE}
 {$ENDIF}
 
-uses SysUtils, Classes, Contnrs;
+uses SysUtils, Classes, Contnrs{$IFDEF FPC}{$IFDEF UNIX}, clocale{$ENDIF}{$ENDIF};
 
 type
   ECBorNotImplmented = class(Exception);
@@ -831,7 +831,11 @@ function TCborFloat.ToString: string;
 var fmt : TFormatSettings;
 begin
      {$IFNDEF HAVE_TFORMATSETTINGS_CREATE}
+     {$IF DECLARED(GetLocaleFormatSettings)}
      GetLocaleFormatSettings(0, fmt);
+     {$ELSE}
+     fmt := DefaultFormatSettings;
+     {$ENDIF}
      {$ELSE}
      fmt := TFormatSettings.Create;
      {$ENDIF}
