@@ -134,12 +134,12 @@ implementation
 uses
   {$IFDEF WITH_UNITANSISTRINGS}AnsiStrings, {$ENDIF}
   ZSysUtils, ZFastCode, ZMessages, ZDbcProxy, ZDbcProxyResultSet, ZDbcProxyUtils,
-  ZEncoding, ZTokenizer, ZClasses, ActiveX,
+  ZEncoding, ZTokenizer, ZClasses, {$IFNDEF NO_SAFECALL}ActiveX,{$ENDIF}
   // For the resolvers:
   ZDbcFirebirdInterbase, ZDbcASA,ZDbcDbLibResultSet, ZDbcOracle, ZDbcPostgreSqlResultSet,
   TypInfo, Variants, ZBase64, ZExceptions{$IFDEF ZEOS73UP}, FmtBcd{$ENDIF}
   {$IF defined(NO_INLINE_SIZE_CHECK) and not defined(UNICODE) and defined(MSWINDOWS)},Windows{$IFEND}
-  {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFNDEF FPC}, AxCtrls{$ELSE}, ComObj{$ENDIF};
+  {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFNDEF FPC}{$IFNDEF NO_SAFECALL}, AxCtrls{$ENDIF}{$ELSE}, ComObj{$ENDIF};
 
 var
   ProxyFormatSettings: TFormatSettings;
@@ -363,8 +363,10 @@ var
   Params: String;
   ResultStr: String;
   xSQL: ZWideString;
+  {$IFNDEF NO_SAFECALL}
   CborStrI: IStream;
-  CborStr: TOleStream;
+  {$ENDIF}
+  CborStr: TStream;
   CborItem: TCborItem;
   CborRes: TCborArr;
   S: Integer;
@@ -391,8 +393,12 @@ begin
       LastUpdateCount := StrToInt(ResultStr);
     end;
   end else begin
+    {$IFNDEF NO_SAFECALL}
     CborStrI := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, Params, GetMaxRows);
     CborStr := TOleStream.Create(CborStrI);
+    {$ELSE}
+    CborStr := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, Params, GetMaxRows);
+    {$ENDIF}
     try
       S := CborStr.Size;
       if s = 0 then

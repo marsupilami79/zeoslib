@@ -69,7 +69,7 @@ implementation
 
 {$IF DEFINED(ENABLE_PROXY) AND DEFINED(ENABLE_INTERNAL_PROXY)}
 
-uses SysUtils, ActiveX,{$IFNDEF NO_SAFECALL} ComObj,{$ENDIF} SOAPHTTPClient, ZExceptions, SOAPHTTPTrans, Types {{$IFDEF TCERTIFICATE_HAS_PUBLICKEY}, Net.URLClient, Net.HttpClient{{$ENDIF}, System.Net.HttpClientComponent, ZDbcXmlUtils;
+uses SysUtils, {$IFNDEF NO_SAFECALL}ActiveX, ComObj,{$ENDIF} SOAPHTTPClient, ZExceptions, SOAPHTTPTrans, Types {{$IFDEF TCERTIFICATE_HAS_PUBLICKEY}, Net.URLClient, Net.HttpClient{{$ENDIF}, System.Net.HttpClientComponent, ZDbcXmlUtils;
 
 type
   TZDbcProxy = class(TInterfacedObject, IZDbcProxy{$IFNDEF NO_SAFECALL}, ISupportErrorInfo{$ENDIF})
@@ -103,7 +103,7 @@ type
       procedure Rollback; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function SetProperties(const Properties : WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function ExecuteStatement(const SQL, Parameters: WideString; const MaxRows: LongWord): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
-      function ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): IStream; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
+      function ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): {$IFDEF NO_SAFECALL}TStream{$ELSE}IStream{$ENDIF}; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function GetTables(const Catalog, SchemaPattern, TableNamePattern, Types: WideString): WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function GetSchemas: WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
       function GetCatalogs: WideString; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
@@ -299,7 +299,7 @@ begin
   Result := FService.ExecuteStatement(FConnectionID, SQL, Parameters, MaxRows);
 end;
 
-function TZDbcProxy.ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): IStream; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
+function TZDbcProxy.ExecuteStatementCb(const SQL, Parameters: WideString; const MaxRows: LongWord): {$IFDEF NO_SAFECALL}TStream{$ELSE}IStream{$ENDIF}; {$IFNDEF NO_SAFECALL}safecall;{$ENDIF}
 var
   Query: String;
   Req: TStringStream;
@@ -319,7 +319,11 @@ begin
     end;
 
     if Assigned(Res) then
+      {$IFNDEF NO_SAFECALL}
       Result := TStreamAdapter.Create(Res, soOwned)
+      {$ELSE}
+      Result := Res
+      {$ENDIF}
     else
       Result := nil;
   except
