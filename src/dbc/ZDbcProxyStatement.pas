@@ -370,7 +370,7 @@ var
   S: Integer;
 const
   ResultSetStart = '<resultset ';
-  UseCbor = False;
+  UseCbor = True;
   ZCborChangedRows = 1;
   ZCborResultSet = 2;
   ZCborError = 3;

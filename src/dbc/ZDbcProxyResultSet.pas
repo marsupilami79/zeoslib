@@ -1781,7 +1781,47 @@ end;
 
 function TZDbcProxyResultSet.GetBytes(ColumnIndex: Integer; out Len: NativeUInt): PByte;
 begin
-  raise EZSQLException.Create('GetBytes is not supported (yet)');
+{$IFNDEF DISABLE_CHECKING}
+  CheckColumnConvertion(ColumnIndex, stInteger);
+{$ENDIF}
+  LastWasNull := IsNull(ColumnIndex);
+
+  if LastWasNull then begin
+    Result := 0;
+    exit;
+  end;
+
+  case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
+    //stBoolean:
+    //  Result := BoolToInt(GetBoolean(ColumnIndex));
+    //stByte, stWord, stLongWord, stULong,
+    //stShort, stSmall, stInteger, stLong:
+    //  Result := GetLong(ColumnIndex);
+    //stFloat, stDouble:
+    //  Result := Round(GetDouble(ColumnIndex));
+    //stCurrency, stBigDecimal:
+    //  Result := BcdToInteger(GetBigDecimal(ColumnIndex));
+    //stDate:
+    //  Result := Round(GetDate(ColumnIndex));
+    //stTime:
+    //  Result := 0;
+    //stTimestamp:
+    //  Result := Round(GetTimestamp(ColumnIndex));
+    stString, stUnicodeString, stAsciiStream, stUnicodeStream:
+      FRawTemp := GetUTF8String(ColumnIndex);
+    stBytes,  stBinaryStream:
+      FRawTemp := GetRawByteString(ColumnIndex);
+    else
+      raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Int64.');
+
+    if Length(FRawTemp) = 0 then begin
+      Len := 0;
+      Result := nil;
+    end else begin
+      Result := @FRawTemp[1];
+      Len := Length(FRawTemp);
+    end;
+  end;
 end;
 
 procedure TZDbcProxyResultSet.GetDate(ColumnIndex: Integer; var Result: TZDate);
@@ -2275,7 +2315,7 @@ begin
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
       Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
     stBytes,  stBinaryStream:
-      raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to String.')
+      Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborByteString).Value;
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to String.')
   end;
@@ -2680,7 +2720,7 @@ begin
       if FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] is TCborFloat then
         Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value
       else if FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] is TCborUtf8String then
-        Result := StrToBcd((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value)
+        Result := StrToBcd((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value, Self.FFormatSettings)
       else
         raise EZUnsupportedException.Create('Cannot convert ' + FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex].ClassName + ' to BCD.');
     stDate:
@@ -3014,7 +3054,47 @@ end;
 
 function TZDbcProxyCborResultSet.GetBytes(ColumnIndex: Integer; out Len: NativeUInt): PByte;
 begin
-  raise EZSQLException.Create('GetBytes is not supported (yet)');
+{$IFNDEF DISABLE_CHECKING}
+  CheckColumnConvertion(ColumnIndex, stInteger);
+{$ENDIF}
+  LastWasNull := IsNull(ColumnIndex);
+
+  if LastWasNull then begin
+    Result := 0;
+    exit;
+  end;
+
+  case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
+    //stBoolean:
+    //  Result := BoolToInt(GetBoolean(ColumnIndex));
+    //stByte, stWord, stLongWord, stULong,
+    //stShort, stSmall, stInteger, stLong:
+    //  Result := GetLong(ColumnIndex);
+    //stFloat, stDouble:
+    //  Result := Round(GetDouble(ColumnIndex));
+    //stCurrency, stBigDecimal:
+    //  Result := BcdToInteger(GetBigDecimal(ColumnIndex));
+    //stDate:
+    //  Result := Round(GetDate(ColumnIndex));
+    //stTime:
+    //  Result := 0;
+    //stTimestamp:
+    //  Result := Round(GetTimestamp(ColumnIndex));
+    stString, stUnicodeString, stAsciiStream, stUnicodeStream:
+      FRawTemp := GetUTF8String(ColumnIndex);
+    stBytes,  stBinaryStream:
+      FRawTemp := GetRawByteString(ColumnIndex);
+    else
+      raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Int64.');
+
+    if Length(FRawTemp) = 0 then begin
+      Len := 0;
+      Result := nil;
+    end else begin
+      Result := @FRawTemp[1];
+      Len := Length(FRawTemp);
+    end;
+  end;
 end;
 
 procedure TZDbcProxyCborResultSet.GetDate(ColumnIndex: Integer; var Result: TZDate);
