@@ -140,7 +140,7 @@ begin
     on E: Exception do begin
       Res := TMemoryStream.Create;
       try
-        encodeException(E, AResponse.ContentStream);
+        encodeException(E, Res);
         AResponse.ContentStream := Res;
         AResponse.ContentType := 'application/cbor';
       except

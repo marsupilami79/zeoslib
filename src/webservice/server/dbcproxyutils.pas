@@ -142,6 +142,8 @@ var
   end;
 
 begin
+  if not Assigned(ParamsNode) then
+    exit;
   ParamType := stBoolean;
   for x := 1 to ParamsNode.GetChildNodes.Count do begin
     ParamIdx := x - 1 + FirstDbcIndex;
