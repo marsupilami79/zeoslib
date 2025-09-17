@@ -402,6 +402,7 @@
                                               {$UNDEF MISS_MATH_NATIVEUINT_MIN_MAX_OVERLOAD}
                                               {$IF CompilerVersion >= 37} //Delphi 13 Florence
                                                 {$DEFINE WITH_FTLARGEUINT}
+												{$WEAKLINKRTTI OFF} //Enable extended RTTI, otherwise we get compiler errors on Delphi 13 for Android
                                               {$IFEND CompilerVersion >= 37} // Delphi 13 Athens
                                             {$IFEND CompilerVersion >= 36} // Delphi 12 Athens
                                           {$IFEND CompilerVersion >= 35} // Delphi 11 Alexandria
