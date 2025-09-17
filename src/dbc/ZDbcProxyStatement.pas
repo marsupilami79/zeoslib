@@ -139,7 +139,7 @@ uses
   ZDbcFirebirdInterbase, ZDbcASA,ZDbcDbLibResultSet, ZDbcOracle, ZDbcPostgreSqlResultSet,
   TypInfo, Variants, ZBase64, ZExceptions{$IFDEF ZEOS73UP}, FmtBcd{$ENDIF}
   {$IF defined(NO_INLINE_SIZE_CHECK) and not defined(UNICODE) and defined(MSWINDOWS)},Windows{$IFEND}
-  {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFNDEF FPC}{$IFNDEF NO_SAFECALL}, AxCtrls{$ENDIF}{$ELSE}, ComObj{$ENDIF};
+  {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFDEF FPC}, ComObj{$ENDIF};
 
 var
   ProxyFormatSettings: TFormatSettings;
@@ -372,7 +372,7 @@ var
   S: Integer;
 const
   ResultSetStart = '<resultset ';
-  UseCbor = True;
+  UseCbor = False;
   ZCborChangedRows = 1;
   ZCborResultSet = 2;
   ZCborError = 3;
@@ -395,7 +395,7 @@ begin
   end else begin
     {$IFNDEF NO_SAFECALL}
     CborStrI := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, Params, GetMaxRows);
-    CborStr := TOleStream.Create(CborStrI);
+    CborStr := TZOleStream.Create(CborStrI);
     {$ELSE}
     CborStr := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, Params, GetMaxRows);
     {$ENDIF}
