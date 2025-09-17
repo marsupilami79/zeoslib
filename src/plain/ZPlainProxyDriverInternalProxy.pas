@@ -69,7 +69,7 @@ implementation
 
 {$IF DEFINED(ENABLE_PROXY) AND DEFINED(ENABLE_INTERNAL_PROXY)}
 
-uses SysUtils, {$IFNDEF NO_SAFECALL}ActiveX, ComObj,{$ENDIF} SOAPHTTPClient, ZExceptions, SOAPHTTPTrans, Types {{$IFDEF TCERTIFICATE_HAS_PUBLICKEY}, Net.URLClient, Net.HttpClient{{$ENDIF}, System.Net.HttpClientComponent, ZDbcXmlUtils;
+uses SysUtils, ZClasses, {$IFNDEF NO_SAFECALL}ActiveX, ComObj,{$ENDIF} SOAPHTTPClient, ZExceptions, SOAPHTTPTrans, Types {{$IFDEF TCERTIFICATE_HAS_PUBLICKEY}, Net.URLClient, Net.HttpClient{{$ENDIF}, System.Net.HttpClientComponent;
 
 type
   TZDbcProxy = class(TInterfacedObject, IZDbcProxy{$IFNDEF NO_SAFECALL}, ISupportErrorInfo{$ENDIF})
