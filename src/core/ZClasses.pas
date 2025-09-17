@@ -59,7 +59,7 @@ uses
   SysUtils, Classes, SyncObjs, FmtBCD,
   ZCompatibility, ZSysUtils
   {$IF defined(MSWINDOWS) and not defined(FPC)}, Windows{$IFEND} //some old comp. -> INFINITE
-  {$IFDEF NO_UNIT_CONTNRS},System.Generics.Collections{$ENDIF}{$IFNDEF NO_SAFECALL}{$IFDEF FPC}, Types, ComObj{$ELSE}, Winapi.ActiveX, System.Win.ComObj{$ENDIF}{$ENDIF};
+  {$IFDEF NO_UNIT_CONTNRS},System.Generics.Collections{$ENDIF}{$IFNDEF NO_SAFECALL}{$IFDEF FPC}, Types, ComObj{$ELSE}, ActiveX, ComObj{$ENDIF}{$ENDIF};
 
 const
   ZEOS_MAJOR_VERSION = 8;
