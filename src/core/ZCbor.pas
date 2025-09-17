@@ -273,7 +273,7 @@ implementation
   {$IFEND}
 {$ENDIF}
 
-uses Math, {$IFNDEF FPC}idCoderMime,{$ENDIF} StrUtils, ZBase64;
+uses Math, StrUtils, ZBase64;
 
 
 const cCBORTypeMask = $E0;
@@ -362,17 +362,17 @@ begin
         exit('');
 
      {$IF NOT DECLARED(ZEncodeBase64)}
-     wrapMem := TWrapMemoryStream.Create( pData, len );
-     try
-        with TIdEncoderMIME.Create(nil) do
-        try
-           sFixup := Encode( wrapMem );
-        finally
-               Free;
-        end;
-     finally
-            wrapMem.Free;
-     end;
+     //wrapMem := TWrapMemoryStream.Create( pData, len );
+     //try
+     //   with TIdEncoderMIME.Create(nil) do
+     //   try
+     //      sFixup := Encode( wrapMem );
+     //   finally
+     //          Free;
+     //   end;
+     //finally
+     //       wrapMem.Free;
+     //end;
      {$ELSE}
      SetLength(Data, len);
      Move(pData^, Data[0], len);
@@ -395,17 +395,17 @@ var
   {$IFEND}
 begin
      {$IF NOT DECLARED(ZEncodeBase64)}
-     wrapMem := TWrapMemoryStream.Create( pData, len );
-     try
-        with TIdEncoderMIME.Create(nil) do
-        try
-           Result := Encode( wrapMem );
-        finally
-               Free;
-        end;
-     finally
-            wrapMem.Free;
-     end;
+     //wrapMem := TWrapMemoryStream.Create( pData, len );
+     //try
+     //   with TIdEncoderMIME.Create(nil) do
+     //   try
+     //      Result := Encode( wrapMem );
+     //   finally
+     //          Free;
+     //   end;
+     //finally
+     //       wrapMem.Free;
+     //end;
      {$ELSE}
      if len = 0 then
         exit('');
@@ -835,7 +835,7 @@ begin
      GetLocaleFormatSettings(0, fmt);
      {$ELSE}
      fmt := DefaultFormatSettings;
-     {$ENDIF}
+     {$IFEND}
      {$ELSE}
      fmt := TFormatSettings.Create;
      {$ENDIF}
