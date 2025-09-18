@@ -3315,8 +3315,8 @@ function TZOleStream.GetSize: Int64;
 var
   stat: STATSTG;
 begin
-  FillChar(stat, sizeof(stat), 0);
-  OleCheck(FStream.Stat(&stat, STATFLAG_NONAME));
+  FillChar(stat, sizeof(stat), #0);
+  OleCheck(FStream.Stat(stat, STATFLAG_NONAME));
   Result := stat.cbSize;
 end;
 
