@@ -552,13 +552,13 @@ end;
 // based on: https://galfar.vevb.net/wp/2011/16bit-half-float-in-pascaldelphi/
 
 function FloatToHalf(Float: Single): Word;
-var Src: LongWord;
-    Sign, Exp, Mantissa: LongInt;
+var Src: Cardinal;
+    Sign, Exp, Mantissa: Integer;
 begin
-     Src := PLongWord(@Float)^;
+     Src := PCardinal(@Float)^;
      // Extract sign, exponent, and mantissa from Single number
      Sign := Src shr 31;
-     Exp := LongInt((Src and $7F800000) shr 23) - 127 + 15;
+     Exp := Integer((Src and $7F800000) shr 23) - 127 + 15;
      Mantissa := Src and $007FFFFF;
 
      if (Exp > 0) and (Exp < 30)
@@ -628,8 +628,8 @@ begin
 end;
 
 function HalfToFloat(Half: word): Single;
-var Dst, Sign, Mantissa: LongWord;
-    Exp: LongInt;
+var Dst, Sign, Mantissa: Cardinal;
+    Exp: Integer;
 begin
      // Extract sign, exponent, and mantissa from half number
      Sign := Half shr 15;
@@ -641,7 +641,7 @@ begin
           // Common normalized number
           Exp := Exp + (127 - 15);
           Mantissa := Mantissa shl 13;
-          Dst := (Sign shl 31) or (LongWord(Exp) shl 23) or Mantissa;
+          Dst := (Sign shl 31) or (Integer(Exp) shl 23) or Mantissa;
           // Result := Power(-1, Sign) * Power(2, Exp - 15) * (1 + Mantissa / 1024);
      end
      else if (Exp = 0) and (Mantissa = 0) then
@@ -662,7 +662,7 @@ begin
           // Now assemble normalized number
           Exp := Exp + (127 - 15);
           Mantissa := Mantissa shl 13;
-          Dst := (Sign shl 31) or (LongWord(Exp) shl 23) or Mantissa;
+          Dst := (Sign shl 31) or (Cardinal(Exp) shl 23) or Mantissa;
           // Result := Power(-1, Sign) * Power(2, -14) * (Mantissa / 1024);
      end
      else if (Exp = 31) and (Mantissa = 0) then
@@ -937,7 +937,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : Cardinal;
     i : Integer;
 begin
      len := fNames.Count;
@@ -962,11 +962,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(Cardinal) then
      begin
           opCode := $BA;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := Cardinal(len);
           RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1086,7 +1086,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : Cardinal;
     i : Integer;
 begin
      len := farr.Count;
@@ -1111,11 +1111,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(Cardinal) then
      begin
           opCode := $9A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := Cardinal(len);
           RevertByteOrder( @dwLen, sizeof(dwLen) );
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1204,7 +1204,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : Cardinal;
 begin
      len := length(futfStr);
 
@@ -1228,11 +1228,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(Cardinal) then
      begin
           opCode := $7A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := Cardinal(len);
           RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1266,7 +1266,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : Cardinal;
 begin
      len := length(fbyteStr);
 
@@ -1290,11 +1290,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(Cardinal) then
      begin
           opCode := $5A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := Cardinal(len);
           RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1333,7 +1333,7 @@ procedure TCborNegIntItem.CBOREncode(toStream: TStream);
 var opCode : Byte;
     bData : Byte;
     wData : Word;
-    dwData : LongWord;
+    dwData : Cardinal;
     uIntVal : UINT64;
 begin
      uIntVal := abs( fnegIntVal + 1);
@@ -1359,10 +1359,10 @@ begin
           toStream.WriteBuffer(opCode, sizeof(opCode));
           toStream.WriteBuffer(wData, sizeof(wData));
      end
-     else if uIntVal <= High(LongWord) then
+     else if uIntVal <= High(Cardinal) then
      begin
           opCode := $3A;
-          dwData := LongWord( uIntVal );
+          dwData := Cardinal( uIntVal );
           RevertByteOrder(@dwData, sizeof(dwData));
           toStream.WriteBuffer(opCode, sizeof(opCode));
           toStream.WriteBuffer(dwData, sizeof(dwData));
@@ -1396,7 +1396,7 @@ procedure TCborUINTItem.CBOREncode(toStream: TStream);
 var opCode : Byte;
     bData : Byte;
     wData : Word;
-    dwData : LongWord;
+    dwData : Cardinal;
     u64Data : UInt64;
 begin
      // determine "opcode"
@@ -1420,10 +1420,10 @@ begin
           RevertByteOrder(@wData, sizeof(wData));
           toStream.WriteBuffer(wData, sizeof(wData));
      end
-     else if fUIntVal <= High(LongWord) then
+     else if fUIntVal <= High(Cardinal) then
      begin
           opCode := $1A;
-          dwData := LongWord( fUIntVal );
+          dwData := Cardinal( fUIntVal );
           toStream.WriteBuffer(opCode, sizeof(opCode));
           RevertByteOrder(@dwData, sizeof(dwData));
           toStream.WriteBuffer(dwData, sizeof(dwData));
@@ -1578,7 +1578,7 @@ end;
 
 function DecodeLongWord( stream : TStream ) : TCborItem;
 var opCode : byte;
-    val : Longword;
+    val : Cardinal;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
      stream.ReadBuffer(val, sizeof(val));
@@ -1630,7 +1630,7 @@ end;
 
 function DecodeNegLongWord( stream : TStream ) : TCborItem;
 var opCode : byte;
-    val : LongWord;
+    val : Cardinal;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
      stream.ReadBuffer(val, sizeof(val));
@@ -1696,7 +1696,7 @@ begin
 end;
 
 function DecodeLongLongString( stream : TStream ) : TCborItem;
-var len : Longword;
+var len : Cardinal;
     opCode : byte;
     byteSTr : RawByteString;
 begin
@@ -1790,7 +1790,7 @@ begin
 end;
 
 function DecodeUTF8LongLongString( stream : TStream ) : TCborItem;
-var len : LongWord;
+var len : Cardinal;
     opCode : byte;
     byteSTr : UTF8String;
 begin
@@ -1896,7 +1896,7 @@ begin
 end;
 
 function DecodeLongIntList( stream : TStream ) : TCborItem;
-var len : LongWord;
+var len : Cardinal;
     i : integer;
     opCode : Byte;
 begin
@@ -2078,7 +2078,7 @@ end;
 
 function DecodeLongMap( stream : TStream ) : TCborItem;
 var opcode : byte;
-    len : Longword;
+    len : Cardinal;
     i : integer;
     name, value : TCborItem;
 begin
