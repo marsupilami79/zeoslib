@@ -3340,7 +3340,7 @@ function TZOleStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
 const
   IStreamSeekOrigin: Array[TSeekOrigin] of DWORD = (STREAM_SEEK_SET, STREAM_SEEK_CUR, STREAM_SEEK_END);
 var
-  NewPos: {$IFDEF ISTREAM_SEEK_LARGEUINT}LargeInt{$ELSE}LargeUInt{$ENDIF};
+  NewPos: {$IFDEF ISTREAM_SEEK_LARGEUINT}LargeUInt{$ELSE}LargeInt{$ENDIF};
 begin
   OleCheck(FStream.Seek(Offset, IStreamSeekOrigin[Origin], NewPos));
   Result := NewPos;

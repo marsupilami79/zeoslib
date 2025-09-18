@@ -2421,7 +2421,7 @@ begin
     stFloat, stDouble:
       Result := GetDouble(ColumnIndex) <> 0;
     stCurrency, stBigDecimal:
-      Result := GetBigDecimal(ColumnIndex) <> 0;
+      Result := BcdCompare(GetBigDecimal(ColumnIndex), IntegerToBcd(0)) <> 0;
     stDate:
       Result := GetDate(ColumnIndex) <> 0;
     stTime:
@@ -2525,7 +2525,11 @@ begin
     stFloat, stDouble:
       Result := Round(GetDouble(ColumnIndex));
     stCurrency, stBigDecimal:
+      {$IF DECLARED(BcdToInt64)}
+      Result := BcdToInt64(GetBigDecimal(ColumnIndex));
+      {$ELSE}
       Result := BcdToInteger(GetBigDecimal(ColumnIndex));
+      {$IFEND}
     stDate:
       Result := Round(GetDate(ColumnIndex));
     stTime:
@@ -2575,7 +2579,11 @@ begin
     stFloat, stDouble:
       Result := Round(GetDouble(ColumnIndex));
     stCurrency, stBigDecimal:
+      {$IF DECLARED(BcdToInt64)}
+      Result := BcdToInt64(GetBigDecimal(ColumnIndex));
+      {$ELSE}
       Result := BcdToInteger(GetBigDecimal(ColumnIndex));
+      {$IFEND}
     stDate:
       Result := Round(GetDate(ColumnIndex));
     stTime:
@@ -2709,30 +2717,32 @@ begin
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     stBoolean:
-      Result := BoolToInt(GetBoolean(ColumnIndex));
-    stByte, stWord, stLongWord, stULong:
-      Result := GetULong(ColumnIndex);
-    stShort, stSmall, stInteger, stLong:
-      Result := GetLong(ColumnIndex);
+      Result := IntegerToBcd(BoolToInt(GetBoolean(ColumnIndex)));
+    stByte, stWord, stLongWord{, stULong}:
+      Result := IntegerToBcd(GetULong(ColumnIndex));
+    stShort, stSmall, stInteger{, stLong}:
+      Result := IntegerToBcd(GetLong(ColumnIndex));
     stFloat, stDouble:
-      Result := GetDouble(ColumnIndex);
+      Result := DoubleToBcd(GetDouble(ColumnIndex));
     stCurrency, stBigDecimal:
       if FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] is TCborFloat then
-        Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value
+        Result := DoubleToBcd((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value)
+      {$IFDEF HAVE_BCDTOSTR_FORMATSETTINGS}
       else if FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] is TCborUtf8String then
         Result := StrToBcd((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value, Self.FFormatSettings)
+      {$ENDIF}
       else
         raise EZUnsupportedException.Create('Cannot convert ' + FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex].ClassName + ' to BCD.');
     stDate:
-      Result := GetDate(ColumnIndex);
+      Result := DoubleToBcd(GetDate(ColumnIndex));
     stTime:
-      Result := GetTime(ColumnIndex);
+      Result := DoubleToBcd(GetTime(ColumnIndex));
     stTimestamp:
-      Result := GetTimestamp(ColumnIndex);
+      Result := DoubleToBcd(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := DoubleToBcd(StrToFloatDef(GetUTF8String(ColumnIndex), 0));
     stBytes,  stBinaryStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := DoubleToBcd(StrToFloatDef(GetUTF8String(ColumnIndex), 0));
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to BCD.')
   end;
@@ -3011,7 +3021,11 @@ begin
     stFloat, stDouble:
       Result := Round(GetDouble(ColumnIndex));
     stCurrency, stBigDecimal:
+      {$IF DECLARED(BcdToInt64)}
+      Result := BcdToInt64(GetBigDecimal(ColumnIndex));
+      {$ELSE}
       Result := BcdToInteger(GetBigDecimal(ColumnIndex));
+      {$IFEND}
     stDate:
       Result := Round(GetDate(ColumnIndex));
     stTime:
