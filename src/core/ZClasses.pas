@@ -59,7 +59,7 @@ uses
   SysUtils, Classes, SyncObjs, FmtBCD,
   ZCompatibility, ZSysUtils
   {$IF defined(MSWINDOWS) and not defined(FPC)}, Windows{$IFEND} //some old comp. -> INFINITE
-  {$IFDEF NO_UNIT_CONTNRS},System.Generics.Collections{$ENDIF}{$IFNDEF NO_SAFECALL}{$IFDEF FPC}, Types, ComObj{$ELSE}, ActiveX, ComObj{$ENDIF}{$ENDIF};
+  {$IFDEF NO_UNIT_CONTNRS},System.Generics.Collections{$ENDIF}{$IFNDEF NO_SAFECALL}{$IFDEF FPC}, Types{$ELSE}, ActiveX, ComObj{$ENDIF}{$ENDIF};
 
 const
   ZEOS_MAJOR_VERSION = 8;
@@ -1018,6 +1018,7 @@ type
   protected
     function GetSize: Int64; override;
     procedure SetSize(const NewSize: Int64); override;
+    procedure OleCheck(Value : HResult);inline;
   public
     constructor Create(Stream: IStream);
     function Read(var Buffer; Count: Integer): Integer; override;
@@ -3300,6 +3301,16 @@ begin
 end;
 
 {$IFNDEF NO_SAFECALL}
+procedure TZOleStream.OleCheck(Value : HResult);
+var
+  Msg: String;
+begin
+  if Value <> 0 then begin
+    Msg := SysErrorMessage(Value);
+    raise EZSQLException.Create(Msg);
+  end;
+end;
+
 function TZOleStream.GetSize: Int64;
 var
   stat: STATSTG;
