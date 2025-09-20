@@ -670,7 +670,7 @@ begin
         {$IFDEF WITH_FTLONGWORD}ftLongword:
           ResultValues[I] := EncodeUInteger(ResultSet.GetULong(ColumnIndex));
         {$ENDIF}
-        ftLargeInt{$IFNDEF WITH_FTLARGEUINT}, ftLargeUint{$ENDIF}: if Metadata.GetColumnType(I{$IFNDEF GENERIC_INDEX}+1{$ENDIF}) = stULong
+        ftLargeInt{$IFDEF WITH_FTLARGEUINT}, ftLargeUint{$ENDIF}: if Metadata.GetColumnType(I{$IFNDEF GENERIC_INDEX}+1{$ENDIF}) = stULong
           then ResultValues[I] := EncodeUInteger(ResultSet.GetULong(ColumnIndex))
           else ResultValues[I] := EncodeInteger(ResultSet.GetLong(ColumnIndex));
         ftDate, ftTime, ftDateTime:
