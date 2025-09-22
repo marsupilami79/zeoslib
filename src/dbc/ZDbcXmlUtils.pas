@@ -9,14 +9,13 @@ uses SysUtils, Classes, ZDbcIntfs;
 function ZXmlEncodeResultSet(const RS: IZResultSet; const MaxRows: LongWord = 0; const UpdateCount: Integer = 0): String;
 function ZXmlEncodeResultSetMetaData(const MD: IZResultSetMetadata): String;
 function ZXmlEncodeResultSetRows(const RS: IZResultSet; const MaxRows: Integer): String;
-function XMLEncode(Input: String): String;
 
 var
   ZXmlProxyFormatSettings: TFormatSettings;
 
 implementation
 
-uses typinfo, FMTBCD, {$IFDEF WITH_TBYTES}ZBase64,{$ENDIF} ZExceptions, ZCompatibility;
+uses typinfo, FMTBCD, {$IFDEF WITH_TBYTES}ZBase64,{$ENDIF} ZExceptions, ZCompatibility, ZClasses;
 
 {$IFNDEF FPC}
 const
@@ -311,33 +310,6 @@ begin
     end;
     Result := '<rows>' + LineEnding + Line + '</rows>';
   end;
-end;
-
-function XMLEncode(Input: String): String;
-var
-  x: Integer;
-  Position: Integer;
-
-  procedure CutAndInsert(Replacement: String);
-  begin
-    if Position < x then Result := Result + Copy(Input, Position, x - Position);
-    Result := Result + Replacement;
-    Position := x + 1;
-  end;
-begin
-  Position := 1;
-  Result := '';
-  for x := 1 to Length(Input) do begin
-    case Input[x] of
-      #00..#31, '%': CutAndInsert('&#' + IntToStr(Ord(Input[x])) + ';');
-      '<': CutAndInsert('&lt;');
-      '>': CutAndInsert('&gt;');
-      '&': CutAndInsert('&amp;');
-      '''': CutAndInsert('&apos;');
-      '"': CutAndInsert('&quot;');
-    end;
-  end;
-  if Position <= Length(Input) then Result := Result + Copy(Input, Position, Length(Input));
 end;
 
 initialization
