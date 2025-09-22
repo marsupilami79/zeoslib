@@ -3068,6 +3068,8 @@ end;
 
 function TZDbcProxyCborResultSet.GetBytes(ColumnIndex: Integer; out Len: NativeUInt): PByte;
 begin
+  Result := nil;
+
 {$IFNDEF DISABLE_CHECKING}
   CheckColumnConvertion(ColumnIndex, stInteger);
 {$ENDIF}
