@@ -370,9 +370,9 @@
                               {$UNDEF WITH_DBTABLES} //M.A. In Delphi XE7 no BDE
                               {$DEFINE WITH_LIFECYCLES} //TDataSet.DefaultFields is deprecated use LifeCycles instead
                               {$IF CompilerVersion >= 29} //Delphi XE8+
+						        {$DEFINE ISTREAM_SEEK_LARGEUINT}
                                 {$IF CompilerVersion >= 30} //Delphi XE10 Seattle+
                                   {$IF CompilerVersion >= 31} //Delphi XE10.1 Berlin+
-								    {$DEFINE ISTREAM_SEEK_LARGEUINT}
                                     {$IF CompilerVersion >= 32} //Delphi XE10.2 Tokyo+
                                       {$DEFINE WITH_TRYFINALLY_RESULT_EXCEPTION_CHECK} //the compiler is able to see through try finally block, which have nothing todo initializing the result
                                       {$DEFINE WITH_VIRTUAL_TFIELD_GETASGUID} //TField has now a virtual GetAsGUID function
