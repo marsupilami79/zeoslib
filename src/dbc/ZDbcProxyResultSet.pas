@@ -1638,7 +1638,6 @@ function TZDbcProxyResultSet.GetBlob(ColumnIndex: Integer; LobStreamMode: TZLobS
 var
   ColType: TZSQLType;
   Idx: Integer;
-  AnsiVal: AnsiString;
   ValVariant: Variant;
   WideVal: ZWideString;
   //AnsiVal: {$IFDEF NEXTGEN}RawByteString{$ELSE}AnsiString{$ENDIF};
@@ -1781,15 +1780,14 @@ end;
 
 function TZDbcProxyResultSet.GetBytes(ColumnIndex: Integer; out Len: NativeUInt): PByte;
 begin
+  Result := nil;
 {$IFNDEF DISABLE_CHECKING}
   CheckColumnConvertion(ColumnIndex, stInteger);
 {$ENDIF}
   LastWasNull := IsNull(ColumnIndex);
 
-  if LastWasNull then begin
-    Result := 0;
+  if LastWasNull then
     exit;
-  end;
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     //stBoolean:
@@ -2013,12 +2011,12 @@ begin
 //    h‰? codepage und hasdefaultvalue gibts nicht am columntype?
 
       // todo: kl‰ren, was hier vonwegen der oben auskommentierten Unicodegeschichten rein muﬂ...
-      CatalogName := (ColumnItem.Items[CatalogNameIdx] as TCborUtf8String).Value;
+      CatalogName := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[CatalogNameIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       {$IFNDEF ZEOS73UP}
       ColumnDisplaySize := StrToInt(ColumnNode.Attributes['displaysize']);
       {$ENDIF}
-      ColumnLabel := (ColumnItem.Items[ColumnLabelIdx] as TCborUtf8String).Value;
-      ColumnName := (ColumnItem.Items[ColumnNameIdx] as TCborUtf8String).Value;
+      ColumnLabel := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[ColumnLabelIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
+      ColumnName := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[ColumnNameIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       ColumnType := TZSQLType((ColumnItem.Items[ColumnTypeIdx] as TCborUINTItem).Value);
       case ColumnType of
         stString, stUnicodeString:
@@ -2041,11 +2039,11 @@ begin
           {$ENDIF ZEOS73UP}
           end;
       end;
-      DefaultValue := (ColumnItem.Items[DefaultValueIdx] as TCborUtf8String).Value;
+      DefaultValue := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[DefaultValueIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       Precision := (ColumnItem.Items[PrecisionIdx] as TCborUINTItem).Value;
       Scale := (ColumnItem.Items[ScaleIdx] as TCborUINTItem).Value;
-      SchemaName := (ColumnItem.Items[SchemaNameIdx] as TCborUtf8String).Value;
-      TableName := (ColumnItem.Items[TableNameIdx] as TCborUtf8String).Value;
+      SchemaName := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[SchemaNameIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
+      TableName := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[TableNameIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       AutoIncrement := (ColumnItem.Items[IsAutoIncrementIdx] as TCborBoolean).Value;
       CaseSensitive := (ColumnItem.Items[IsCaseSensitiveIdx] as TCborBoolean).Value;
       Currency := (ColumnItem.Items[IsCurrencyIdx] as TCborBoolean).Value;
@@ -2089,23 +2087,23 @@ begin
   if not LastWasNull then begin
     case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
       stBoolean:
-        FAnsiBuffer := BoolToStr(GetBoolean(ColumnIndex), True);
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFDEF UNICODE}){$ENDIF};
       stByte, stWord, stLongWord, stULong:
-        FAnsiBuffer := IntToStr(GetULong(ColumnIndex));
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stShort, stSmall, stInteger, stLong:
-        FAnsiBuffer := ZFastCode.IntToStr(GetLong(ColumnIndex));
+        FAnsiBuffer := ZFastCode.IntToRaw(GetLong(ColumnIndex));
       stFloat, stDouble:
-        FAnsiBuffer := FloatToStr(GetDouble(ColumnIndex));
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stCurrency, stBigDecimal:
-        FAnsiBuffer := BcdToStr(GetBigDecimal(ColumnIndex));
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stDate:
-        FAnsiBuffer := DateToStr(GetDate(ColumnIndex));
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stTime:
-        FAnsiBuffer := TimeToStr(GetTime(ColumnIndex));
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stTimestamp:
-        FAnsiBuffer := DateTimeToStr(GetTimestamp(ColumnIndex));
+        FAnsiBuffer := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-        FAnsiBuffer := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}(FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       stBytes,  stBinaryStream:
         raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to AnsiString.')
       else
@@ -2149,7 +2147,7 @@ begin
       stTimestamp:
         FWideBuffer := DateTimeToStr(GetTimestamp(ColumnIndex));
       stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-        FWideBuffer := UTF8Decode((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
+        FWideBuffer := UTF8ToString((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
       stBytes,  stBinaryStream:
         raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to WideString.')
       else
@@ -2204,7 +2202,7 @@ begin
       Result := DateTimeToStr(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
       {$IFDEF UNICODE}
-      Result := UTF8Decode((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
+      Result := UTF8ToString((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
       {$ELSE}
       Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
       {$ENDIF}
@@ -2226,23 +2224,23 @@ begin
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     stBoolean:
-      Result := BoolToStr(GetBoolean(ColumnIndex), True);
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFDEF UNICODE}){$ENDIF};
     stByte, stWord, stLongWord, stULong:
-      Result := IntToStr(GetULong(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stShort, stSmall, stInteger, stLong:
-      Result := ZFastCode.IntToStr(GetLong(ColumnIndex));
+      Result := ZFastCode.IntToRaw(GetLong(ColumnIndex));
     stFloat, stDouble:
-      Result := FloatToStr(GetDouble(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stCurrency, stBigDecimal:
-      Result := BcdToStr(GetBigDecimal(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stDate:
-      Result := DateToStr(GetDate(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTime:
-      Result := TimeToStr(GetTime(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTimestamp:
-      Result := DateTimeToStr(GetTimestamp(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
+      Result := {$IFDEF UNICODE}AnsiString({$ENDIF}(FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
     stBytes,  stBinaryStream:
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to AnsiString.')
     else
@@ -2262,21 +2260,21 @@ begin
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     stBoolean:
-      Result := BoolToStr(GetBoolean(ColumnIndex), True);
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFDEF UNICODE}){$ENDIF};
     stByte, stWord, stLongWord, stULong:
-      Result := IntToStr(GetULong(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stShort, stSmall, stInteger, stLong:
-      Result := ZFastCode.IntToStr(GetLong(ColumnIndex));
+      Result := ZFastCode.IntToRaw(GetLong(ColumnIndex));
     stFloat, stDouble:
-      Result := FloatToStr(GetDouble(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stCurrency, stBigDecimal:
-      Result := BcdToStr(GetBigDecimal(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stDate:
-      Result := DateToStr(GetDate(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTime:
-      Result := TimeToStr(GetTime(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTimestamp:
-      Result := DateTimeToStr(GetTimestamp(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
       Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
     stBytes,  stBinaryStream:
@@ -2297,21 +2295,21 @@ begin
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     stBoolean:
-      Result := BoolToStr(GetBoolean(ColumnIndex), True);
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFDEF UNICODE}){$ENDIF};
     stByte, stWord, stLongWord, stULong:
-      Result := IntToStr(GetULong(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stShort, stSmall, stInteger, stLong:
-      Result := ZFastCode.IntToStr(GetLong(ColumnIndex));
+      Result := ZFastCode.IntToRaw(GetLong(ColumnIndex));
     stFloat, stDouble:
-      Result := FloatToStr(GetDouble(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stCurrency, stBigDecimal:
-      Result := BcdToStr(GetBigDecimal(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stDate:
-      Result := DateToStr(GetDate(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTime:
-      Result := TimeToStr(GetTime(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTimestamp:
-      Result := DateTimeToStr(GetTimestamp(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
       Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
     stBytes,  stBinaryStream:
@@ -2331,21 +2329,21 @@ begin
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     stBoolean:
-      Result := BoolToStr(GetBoolean(ColumnIndex), True);
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFDEF UNICODE}){$ENDIF};
     stByte, stWord, stLongWord, stULong:
-      Result := IntToStr(GetULong(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stShort, stSmall, stInteger, stLong:
-      Result := ZFastCode.IntToStr(GetLong(ColumnIndex));
+      Result :=  ZFastCode.IntToRaw(GetLong(ColumnIndex));
     stFloat, stDouble:
-      Result := FloatToStr(GetDouble(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stCurrency, stBigDecimal:
-      Result := BcdToStr(GetBigDecimal(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stDate:
-      Result := DateToStr(GetDate(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTime:
-      Result := TimeToStr(GetTime(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stTimestamp:
-      Result := DateTimeToStr(GetTimestamp(ColumnIndex));
+      Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
       Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value;
     stBytes,  stBinaryStream:
@@ -2356,8 +2354,6 @@ begin
 end;
 
 function TZDbcProxyCborResultSet.GetUnicodeString(ColumnIndex: Integer): ZWideString;
-var
-  Val: OleVariant;
 begin
   LastWasNull := IsNull(ColumnIndex);
   if LastWasNull then begin
@@ -2383,7 +2379,7 @@ begin
     stTimestamp:
       Result := DateTimeToStr(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := UTF8Decode((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
+      Result := UTF8ToString((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
     stBytes,  stBinaryStream:
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to String.')
     else
@@ -2401,8 +2397,6 @@ end;
     value returned is <code>false</code>
 }
 function TZDbcProxyCborResultSet.GetBoolean(ColumnIndex: Integer): Boolean;
-var
-  Str: String;
 begin
 {$IFNDEF DISABLE_CHECKING}
   CheckColumnConvertion(ColumnIndex, stBoolean);
@@ -2429,7 +2423,7 @@ begin
     stTimestamp:
       Result := GetTimestamp(ColumnIndex) <> 0;
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToBoolDef((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value, False);
+      Result := StrToBoolDef({$IFDEF UNICODE}UTF8ToString({$ENDIF}(FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF}, False);
     stBytes,  stBinaryStream:
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Boolean.')
     else
@@ -2481,9 +2475,9 @@ begin
     stTimestamp:
       Result := Round(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToIntDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToIntDef(GetString(ColumnIndex), 0);
     stBytes,  stBinaryStream:
-      Result := StrToIntDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToIntDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Integer.')
   end;
@@ -2537,9 +2531,9 @@ begin
     stTimestamp:
       Result := Round(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToIntDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToIntDef(GetString(ColumnIndex), 0);
     stBytes,  stBinaryStream:
-      Result := StrToIntDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToIntDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Int64.')
   end;
@@ -2591,9 +2585,9 @@ begin
     stTimestamp:
       Result := Round(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToIntDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToIntDef(GetString(ColumnIndex), 0);
     stBytes,  stBinaryStream:
-      Result := StrToIntDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToIntDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Int64.')
   end;
@@ -2638,9 +2632,9 @@ begin
     stTimestamp:
       Result := GetTimestamp(ColumnIndex);
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToFloatDef(GetString(ColumnIndex), 0);
     stBytes,  stBinaryStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToFloatDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Single.')
   end;
@@ -2685,9 +2679,9 @@ begin
     stTimestamp:
       Result := GetTimestamp(ColumnIndex);
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToFloatDef(GetString(ColumnIndex), 0);
     stBytes,  stBinaryStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToFloatDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to Double.')
   end;
@@ -2729,7 +2723,7 @@ begin
         Result := DoubleToBcd((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value)
       {$IFDEF HAVE_BCDTOSTR_FORMATSETTINGS}
       else if FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] is TCborUtf8String then
-        Result := StrToBcd((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value, Self.FFormatSettings)
+        Result := StrToBcd({$IFDEF UNICODE}UTF8ToString({$ENDIF}(FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF}, Self.FFormatSettings)
       {$ENDIF}
       else
         raise EZUnsupportedException.Create('Cannot convert ' + FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex].ClassName + ' to BCD.');
@@ -2740,9 +2734,9 @@ begin
     stTimestamp:
       Result := DoubleToBcd(GetTimestamp(ColumnIndex));
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := DoubleToBcd(StrToFloatDef(GetUTF8String(ColumnIndex), 0));
+      Result := DoubleToBcd(StrToFloatDef(GetString(ColumnIndex), 0));
     stBytes,  stBinaryStream:
-      Result := DoubleToBcd(StrToFloatDef(GetUTF8String(ColumnIndex), 0));
+      Result := DoubleToBcd(StrToFloatDef(GetString(ColumnIndex), 0));
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to BCD.')
   end;
@@ -2810,9 +2804,9 @@ begin
     stTimestamp:
       Result := GetTimestamp(ColumnIndex);
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToFloatDef(GetString(ColumnIndex), 0);
     stBytes,  stBinaryStream:
-      Result := StrToFloatDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToFloatDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to BCD.')
   end;
@@ -2851,7 +2845,7 @@ begin
     stDate, stTime, stTimestamp:
       Result := Trunc((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value);
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToDateDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToDateDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to BCD.')
   end;
@@ -2890,7 +2884,7 @@ begin
     stDate, stTime, stTimestamp:
       Result := Frac((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value);
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-      Result := StrToTimeDef(GetUTF8String(ColumnIndex), 0);
+      Result := StrToTimeDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to BCD.')
   end;
@@ -2979,7 +2973,7 @@ begin
       end;
     end;
     stUnicodeStream, stUnicodeString: begin
-      WideVal := UTF8Decode(GetUTF8String(ColumnIndex));
+      WideVal := UTF8ToString(GetUTF8String(ColumnIndex));
       if WideVal <> '' then begin
          {$IFDEF WITH_ZEROBASEDSTRINGS}
          Result := TZAbstractCLob.CreateWithData(@WideVal[Low(WideVal)], Length(WideVal), GetConSettings) as IZBlob
@@ -3076,7 +3070,7 @@ begin
   LastWasNull := IsNull(ColumnIndex);
 
   if LastWasNull then begin
-    Result := 0;
+    Result := nil;
     exit;
   end;
 
