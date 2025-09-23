@@ -555,21 +555,21 @@ function TryUniToTimeStamp(Value: PWideChar; Len: Cardinal;
 /// <param>"Value" a TZDate value to be converted.</param>
 /// <param>"DT" a reference to the TDateTime-Value we try to convert in.</param>
 /// <returns><c>True</c> if the conversion was successful, <c>False</c> otherwise</returns>
-function TryDateToDateTime(const Value: TZDate; var DT: TDateTime): Boolean;
+function TryDateToDateTime(const Value: TZDate; out DT: TDateTime): Boolean;
 
 /// <author>EgonHugeist</author>
 /// <summary>Trys to convert a TZTime-Value into a pascal TDateTime representation</summary>
 /// <param>"Value" a TZTime value to be converted.</param>
 /// <param>"DT" a reference to the TDateTime-Value we try to convert in.</param>
 /// <returns><c>True</c> if the conversion was successful, <c>False</c> otherwise</returns>
-function TryTimeToDateTime(const Value: TZTime; var DT: TDateTime): Boolean;
+function TryTimeToDateTime(const Value: TZTime; out DT: TDateTime): Boolean;
 
 /// <author>EgonHugeist</author>
 /// <summary>Trys to convert a TZTimeStamp-Value into a pascal TDateTime representation</summary>
 /// <param>"Value" a TZTimeStamp value to be converted.</param>
 /// <param>"DT" a reference to the TDateTime-Value we try to convert in.</param>
 /// <returns><c>True</c> if the conversion was successful, <c>False</c> otherwise</returns>
-function TryTimeStampToDateTime(const Value: TZTimeStamp; var DT: TDateTime): Boolean;
+function TryTimeStampToDateTime(const Value: TZTimeStamp; out DT: TDateTime): Boolean;
 
 /// <author>EgonHugeist</author>
 /// <summary>Decodes a pascal TDateTime vlaue into the TZDate reprensentation</summary>
@@ -3901,21 +3901,21 @@ zFlush: Inc(Value);
   Result := True;
 end;
 
-function TryDateToDateTime(const Value: TZDate; var DT: TDateTime): Boolean;
+function TryDateToDateTime(const Value: TZDate; out DT: TDateTime): Boolean;
 begin
   Result := not Value.IsNegative and TryEncodeDate(Value.Year, Value.Month, Value.Day, DT);
   if not Result then
     DT := 0;
 end;
 
-function TryTimeToDateTime(const Value: TZTime; var DT: TDateTime): Boolean;
+function TryTimeToDateTime(const Value: TZTime; out DT: TDateTime): Boolean;
 begin
   Result := not Value.IsNegative and TryEncodeTime(Value.Hour, Value.Minute, Value.Second, Value.Fractions div NanoSecsPerMSec, DT);
   if not Result then
     DT := 0;
 end;
 
-function TryTimeStampToDateTime(const Value: TZTimeStamp; var DT: TDateTime): Boolean;
+function TryTimeStampToDateTime(const Value: TZTimeStamp; out DT: TDateTime): Boolean;
 var d: TDatetime;
 begin
   if not Value.IsNegative then begin

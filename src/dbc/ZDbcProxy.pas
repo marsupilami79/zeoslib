@@ -377,7 +377,7 @@ begin
 
   if URL.Properties.IndexOfName(ConnProps_TofuPubKeys) >= 0 then begin
     TofuPubKeys := URL.Properties.Values[ConnProps_TofuPubKeys];
-    PropList := PropList + LineEnding + 'TofuPubKeys=' + TofuPubKeys;
+    PropList := PropList + LineEnding + 'TofuPubKeys=' + {$IFNDEF UNICODE}UTF8Decode({$ENDIF}TofuPubKeys{$IFNDEF UNICODE}){$ENDIF};
   end;
 
   FConnIntf.Connect(WideString(User), WideString(Password), WideString(WsUrl), WideString(Database), PropList, MyDbInfo);

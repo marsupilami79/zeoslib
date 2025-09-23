@@ -1643,6 +1643,9 @@ var
   //AnsiVal: {$IFDEF NEXTGEN}RawByteString{$ELSE}AnsiString{$ENDIF};
   Bytes: TBytes;
   ColInfo: TZColumnInfo;
+  {$IFNDEF WITH_ZEROBASEDSTRINGS}
+  AnsiVal: UTF8String;
+  {$ENDIF}
 begin
   if LobStreamMode <> lsmRead then
     raise EZSQLException.Create('No lob stream mode besides lsmRead is supported.');
@@ -2131,21 +2134,21 @@ begin
   if not LastWasNull then begin
     case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
       stBoolean:
-        FWideBuffer := BoolToStr(GetBoolean(ColumnIndex), True);
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFNDEF UNICODE}){$ENDIF};
       stByte, stWord, stLongWord, stULong:
-        FWideBuffer := IntToStr(GetULong(ColumnIndex));
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
       stShort, stSmall, stInteger, stLong:
-        FWideBuffer := ZFastCode.IntToStr(GetLong(ColumnIndex));
+        FWideBuffer := ZFastCode.IntToUnicode(GetLong(ColumnIndex));
       stFloat, stDouble:
-        FWideBuffer := FloatToStr(GetDouble(ColumnIndex));
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
       stCurrency, stBigDecimal:
-        FWideBuffer := BcdToStr(GetBigDecimal(ColumnIndex));
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
       stDate:
-        FWideBuffer := DateToStr(GetDate(ColumnIndex));
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
       stTime:
-        FWideBuffer := TimeToStr(GetTime(ColumnIndex));
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
       stTimestamp:
-        FWideBuffer := DateTimeToStr(GetTimestamp(ColumnIndex));
+        FWideBuffer := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
       stString, stUnicodeString, stAsciiStream, stUnicodeStream:
         FWideBuffer := UTF8ToString((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
       stBytes,  stBinaryStream:
@@ -2363,21 +2366,21 @@ begin
 
   case (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).ColumnType of
     stBoolean:
-      Result := BoolToStr(GetBoolean(ColumnIndex), True);
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}BoolToStr(GetBoolean(ColumnIndex), True){$IFNDEF UNICODE}){$ENDIF};
     stByte, stWord, stLongWord, stULong:
-      Result := IntToStr(GetULong(ColumnIndex));
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
     stShort, stSmall, stInteger, stLong:
-      Result := ZFastCode.IntToStr(GetLong(ColumnIndex));
+      Result := ZFastCode.IntToUnicode(GetLong(ColumnIndex));
     stFloat, stDouble:
-      Result := FloatToStr(GetDouble(ColumnIndex));
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
     stCurrency, stBigDecimal:
-      Result := BcdToStr(GetBigDecimal(ColumnIndex));
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}BcdToStr(GetBigDecimal(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
     stDate:
-      Result := DateToStr(GetDate(ColumnIndex));
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}DateToStr(GetDate(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
     stTime:
-      Result := TimeToStr(GetTime(ColumnIndex));
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
     stTimestamp:
-      Result := DateTimeToStr(GetTimestamp(ColumnIndex));
+      Result := {$IFNDEF UNICODE}UTF8ToString({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFNDEF UNICODE}){$ENDIF};
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
       Result := UTF8ToString((FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value);
     stBytes,  stBinaryStream:
