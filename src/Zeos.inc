@@ -268,6 +268,7 @@
                   {$DEFINE WITH_RTLCONSTS_SInvalidGuidArray}
                   {$DEFINE HAVE_BCDTOSTR_FORMATSETTINGS} //(Try)BCDToStr/StrToBCD has parameter FormatSettings
                   {$DEFINE WITH_TOBJECTLIST_REQUIRES_CLASSES}       //TObjectList.Remove, add ... are inlined need unit classes
+				  {$DEFINE HAVE_TFORMATSETTINGS_CREATE}
                   {$UNDEF WITH_INFINATE_DECLARED_IN_UNIT_WINDOWS} // the INFINATE constant is now declared in System.pas
                   {$IF CompilerVersion >= 23} //Delphi XE2+
 				    {$DEFINE BCDTOSTR_WITH_FORMATSETTINGS} // Delphi has a BcdToStr function with TFormatSettings as a parameter
