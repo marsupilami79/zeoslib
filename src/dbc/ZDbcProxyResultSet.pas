@@ -1640,7 +1640,6 @@ var
   Idx: Integer;
   ValVariant: Variant;
   WideVal: ZWideString;
-  //AnsiVal: {$IFDEF NEXTGEN}RawByteString{$ELSE}AnsiString{$ENDIF};
   Bytes: TBytes;
   ColInfo: TZColumnInfo;
   {$IFNDEF WITH_ZEROBASEDSTRINGS}
@@ -2104,7 +2103,7 @@ begin
       stTime:
         FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}TimeToStr(GetTime(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stTimestamp:
-        FAnsiBuffer := {$IFDEF UNICODE}UTF8Encode({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
+        FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}DateTimeToStr(GetTimestamp(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
       stString, stUnicodeString, stAsciiStream, stUnicodeStream:
         FAnsiBuffer := {$IFDEF UNICODE}AnsiString({$ENDIF}(FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       stBytes,  stBinaryStream:
@@ -2336,7 +2335,7 @@ begin
     stByte, stWord, stLongWord, stULong:
       Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}IntToStr(GetULong(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stShort, stSmall, stInteger, stLong:
-      Result :=  ZFastCode.IntToRaw(GetLong(ColumnIndex));
+      Result := ZFastCode.IntToRaw(GetLong(ColumnIndex));
     stFloat, stDouble:
       Result := {$IFDEF UNICODE}UTF8Encode({$ENDIF}FloatToStr(GetDouble(ColumnIndex)){$IFDEF UNICODE}){$ENDIF};
     stCurrency, stBigDecimal:
@@ -2927,7 +2926,7 @@ begin
     stDate, stTime, stTimestamp:
       Result := (FCurrentRowItem.Items[ColumnIndex - FirstDbcIndex] as TCborFloat).Value;
     stString, stUnicodeString, stAsciiStream, stUnicodeStream:
-        Result := StrToDateTimeDef(String(GetUTF8String(ColumnIndex)), 0);
+        Result := StrToDateTimeDef(GetString(ColumnIndex), 0);
     else
       raise EZUnsupportedException.Create('Cannot convert ' + (ColumnsInfo.Items[ColumnIndex - FirstDbcIndex] as TZColumnInfo).GetColumnTypeName + ' to BCD.')
   end;
