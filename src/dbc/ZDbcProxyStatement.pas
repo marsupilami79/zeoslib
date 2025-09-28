@@ -370,13 +370,15 @@ var
   CborItem: TCborItem;
   CborRes: TCborArr;
   S: Integer;
+  UseCbor: Boolean;
 const
   ResultSetStart = '<resultset ';
-  UseCbor = False;
   ZCborChangedRows = 1;
   ZCborResultSet = 2;
   ZCborError = 3;
 begin
+  UseCbor := (Connection as IZDbcProxyConnection).SupportsCborQuery;
+
   Params := EncodeParams;
 
   xSQL := {$IFDEF UNICODE}FWSQL{$ELSE}UTF8Decode(FASQL){$ENDIF};

@@ -82,6 +82,7 @@ type
     function GetConnectionInterface: IZDbcProxy;
     function GetDbInfoStr: ZWideString;
     function GetPublicKeys: ZWideString;
+    function SupportsCborQuery: Boolean;
   end;
 
   {** Implements DBC Proxy Database Connection. }
@@ -98,6 +99,7 @@ type
     //shadow properties - they just mirror the values that are set on the server
     FCatalog: String;
     FServerProvider: TZServerProvider;
+    FSupportsCborQuery: Boolean;
   protected
     procedure transferProperties(PropName, PropValue: String);
     procedure applyProperties(const Properties: String);
@@ -228,6 +230,7 @@ type
     ///   Gets the public keys from a dbc proxy server in TOFU mode.
     /// </summary>
     function GetPublicKeys: ZWideString;
+    function SupportsCborQuery: Boolean;
   end;
 
 var
@@ -630,6 +633,7 @@ begin
     if TempStr <> '' then begin
       FServerProvider := TZServerProvider(GetEnumValue(TypeInfo(TZServerProvider), TempStr));
     end;
+    FSupportsCborQuery := StrToBoolDef(List.Values['proxy_supportscborquery'], False);
   finally
     FreeAndNil(List);
   end;
@@ -759,6 +763,11 @@ end;
 function TZDbcProxyConnection.GetPublicKeys: ZWideString;
 begin
   Result := FConnIntf.GetPublicKeys;
+end;
+
+function TZDbcProxyConnection.SupportsCborQuery: Boolean;
+begin
+  Result := FSupportsCborQuery;
 end;
 
 initialization
