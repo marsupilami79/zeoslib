@@ -370,6 +370,7 @@
                               {$UNDEF WITH_DBTABLES} //M.A. In Delphi XE7 no BDE
                               {$DEFINE WITH_LIFECYCLES} //TDataSet.DefaultFields is deprecated use LifeCycles instead
                               {$IF CompilerVersion >= 29} //Delphi XE8+
+						        {$DEFINE ISTREAM_SEEK_LARGEUINT}
                                 {$IF CompilerVersion >= 30} //Delphi XE10 Seattle+
                                   {$IF CompilerVersion >= 31} //Delphi XE10.1 Berlin+
                                     {$IF CompilerVersion >= 32} //Delphi XE10.2 Tokyo+
@@ -400,6 +401,10 @@
                                             {$IF CompilerVersion >= 36} //Delphi 12 Athens
                                               {$DEFINE NATIVEINT_WEAK_REFERENCE} // TMemoryStream.Realloc uses NativeInt instead of Longint
                                               {$UNDEF MISS_MATH_NATIVEUINT_MIN_MAX_OVERLOAD}
+                                              {$IF CompilerVersion >= 37} //Delphi 13 Florence
+                                                {$DEFINE WITH_FTLARGEUINT}
+												{$WEAKLINKRTTI OFF} //Enable extended RTTI, otherwise we get compiler errors on Delphi 13 for Android
+                                              {$IFEND CompilerVersion >= 37} // Delphi 13 Athens
                                             {$IFEND CompilerVersion >= 36} // Delphi 12 Athens
                                           {$IFEND CompilerVersion >= 35} // Delphi 11 Alexandria
                                         {$IFEND CompilerVersion >= 34}

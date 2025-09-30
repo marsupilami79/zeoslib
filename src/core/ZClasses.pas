@@ -59,7 +59,7 @@ uses
   SysUtils, Classes, SyncObjs, FmtBCD,
   ZCompatibility, ZSysUtils
   {$IF defined(MSWINDOWS) and not defined(FPC)}, Windows{$IFEND} //some old comp. -> INFINITE
-  {$IFDEF NO_UNIT_CONTNRS},System.Generics.Collections{$ENDIF};
+  {$IFDEF NO_UNIT_CONTNRS},System.Generics.Collections{$ENDIF}{$IFNDEF NO_SAFECALL}{$IFDEF FPC}, Types{$ELSE}, ActiveX, ComObj{$ENDIF}{$ENDIF};
 
 const
   ZEOS_MAJOR_VERSION = 8;
@@ -1011,6 +1011,22 @@ type
   EArgumentException = Class(Exception);
   {$IFEND}
 
+  {$IFNDEF NO_SAFECALL}
+  TZOleStream = class(TStream)
+  private
+    FStream: IStream;
+  protected
+    function GetSize: Int64; override;
+    procedure SetSize(const NewSize: Int64); override;
+    procedure OleCheck(Value : HResult);inline;
+  public
+    constructor Create(Stream: IStream);
+    function Read(var Buffer; Count: Integer): Integer; override;
+    function Write(const Buffer; Count: Integer): Integer; override;
+    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+  end;
+  {$ENDIF}
+
 /// <author>Aleksandr Sharahov see http://guildalfa.ru/alsha/</author>
 /// <summary>Performs hybrid sort algorithm for the list. changes by
 ///  EgonHugeist: Replace cardinal casts by using our NativeUInt to make it
@@ -1024,6 +1040,9 @@ type
 procedure HybridSortSha_0AA(List: PPointerList; Count: integer; Compare: TZListSortCompare);
 
 procedure QuickSort(List: PPointerList; L, R: integer; Compare: TZListSortCompare);
+
+function XMLEncode(Input: String): String;
+
 implementation
 
 uses ZMessages, ZFastCode, ZExceptions
@@ -3254,4 +3273,93 @@ begin
     Result := -1;
 end;
 
+function XMLEncode(Input: String): String;
+var
+  x: Integer;
+  Position: Integer;
+
+  procedure CutAndInsert(Replacement: String);
+  begin
+    if Position < x then Result := Result + Copy(Input, Position, x - Position);
+    Result := Result + Replacement;
+    Position := x + 1;
+  end;
+begin
+  Position := 1;
+  Result := '';
+  for x := 1 to Length(Input) do begin
+    case Input[x] of
+      #00..#31, '%': CutAndInsert('&#' + IntToStr(Ord(Input[x])) + ';');
+      '<': CutAndInsert('&lt;');
+      '>': CutAndInsert('&gt;');
+      '&': CutAndInsert('&amp;');
+      '''': CutAndInsert('&apos;');
+      '"': CutAndInsert('&quot;');
+    end;
+  end;
+  if Position <= Length(Input) then Result := Result + Copy(Input, Position, Length(Input));
+end;
+
+{$IFNDEF NO_SAFECALL}
+procedure TZOleStream.OleCheck(Value : HResult);
+var
+  Msg: String;
+begin
+  if Value <> 0 then begin
+    Msg := SysErrorMessage(Value);
+    raise EZSQLException.Create(Msg);
+  end;
+end;
+
+function TZOleStream.GetSize: Int64;
+var
+  stat: STATSTG;
+begin
+  FillChar(stat, sizeof(stat), #0);
+  OleCheck(FStream.Stat(stat, STATFLAG_NONAME));
+  Result := stat.cbSize;
+end;
+
+procedure TZOleStream.SetSize(const NewSize: Int64);
+begin
+  OleCheck(FStream.SetSize(NewSize));
+end;
+
+constructor TZOleStream.Create(Stream: IStream);
+begin
+  inherited Create;
+  FStream := Stream;
+end;
+
+function TZOleStream.Read(var Buffer; Count: Integer): Integer;
+var
+  BytesRead: Cardinal;
+begin
+  OleCheck(FStream.Read(@Buffer, Count, @BytesRead));
+  Result := BytesRead;
+end;
+
+function TZOleStream.Write(const Buffer; Count: Integer): Integer;
+var
+  BytesWritten: Cardinal;
+begin
+  OleCheck(FStream.Write(@Buffer, Count, @BytesWritten));
+  Result := BytesWritten;
+end;
+
+function TZOleStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+const
+  IStreamSeekOrigin: Array[TSeekOrigin] of DWORD = (STREAM_SEEK_SET, STREAM_SEEK_CUR, STREAM_SEEK_END);
+var
+  NewPos: {$IFDEF ISTREAM_SEEK_LARGEUINT}LargeUInt{$ELSE}LargeInt{$ENDIF};
+begin
+  OleCheck(FStream.Seek(Offset, IStreamSeekOrigin[Origin], NewPos));
+  Result := NewPos;
+end;
+{$ENDIF}
+
+
+
+
 end.
+

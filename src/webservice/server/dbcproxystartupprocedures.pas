@@ -54,6 +54,7 @@ begin
   if Assigned(CleanupThread) then begin
     CleanupThread.Terminate;
     CleanupThread.WaitFor;
+    FreeAndNil(CleanupThread);
   end;
   if Assigned(ConnectionManager) then
     FreeAndNil(ConnectionManager);
