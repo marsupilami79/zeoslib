@@ -67,6 +67,8 @@ type
   TZDbcDuckDBDriver = class(TZAbstractDriver)
   public
     constructor Create; override;
+    destructor Destroy; override;
+
     function Connect(const Url: TZURL): IZConnection; override;
     function GetMajorVersion: Integer; override;
     function GetMinorVersion: Integer; override;
@@ -233,6 +235,9 @@ const
   UseMetadataStr = 'usemetadata';
   ServerProviderStr = 'serverprovider';
 
+var
+  GInstanceCache: TDuckDB_Instance_Cache;
+
 { TZDbcDuckDBDriver }
 
 {**
@@ -242,6 +247,33 @@ constructor TZDbcDuckDBDriver.Create;
 begin
   inherited Create;
   AddSupportedProtocol(AddPlainDriverToCache(TZDuckDBPlainDriver.Create));
+end;
+
+destructor TZDbcDuckDBDriver.Destroy;
+var
+ TempPlainDriver: TZDuckDBPlainDriver;
+ TempZURL: TZURL;
+begin
+  if Assigned(GInstanceCache) then
+  begin
+    // There must be a better way to do this!
+    TempZURL := TZURL.Create;
+    try
+      TempZURL.Protocol := 'DuckDB';
+      TempPlainDriver := GetPlainDriver(TempZURL, True) as TZDuckDBPlainDriver;
+    finally
+      TempZURL.Free;
+    end;
+    if Assigned(TempPlainDriver) then
+    begin
+      if Assigned(TempPlainDriver.duckdb_destroy_instance_cache) then
+      begin
+        TempPlainDriver.duckdb_destroy_instance_cache(@GInstanceCache);
+        GInstanceCache := nil;
+      end;
+    end;
+  end;
+  inherited;
 end;
 
 {**
@@ -330,6 +362,8 @@ end;
 procedure TZDbcDuckDBConnection.AfterConstruction;
 begin
   FPlainDriver := PlainDriver.GetInstance as TZDuckDBPlainDriver;
+  if GInstanceCache = nil then
+    GInstanceCache := FPlainDriver.duckdb_create_instance_cache;
   FMetadata := TZDuckDBDatabaseMetadata.Create(Self, Url);
   inherited AfterConstruction;
 end;
@@ -342,14 +376,19 @@ var
   LogMessage: String;
   DatabasePath: {$IFDEF UNICODE}UTF8String{$ELSE}String{$ENDIF};
   Res: TDuckDB_State;
+  ErrorMessage: PAnsiChar;
 begin
   if not Closed then
     Exit;
 
   LogMessage := 'CONNECT TO "'+ URL.Database + '" AS USER "' + URL.UserName + '"';
   DatabasePath := {$IFDEF UNICODE}UTF8Encode(URL.Database){$ELSE}URL.Database{$ENDIF};
-  Res := FPlainDriver.DuckDB_Open(PAnsiChar(DatabasePath), @FDatabase);
-  CheckDuckDBError(Res, Format('Could not open DuckDB Database %s.', [URL.Database]));
+
+  Res := FPlainDriver.duckdb_get_or_create_from_cache(GInstanceCache, PAnsiChar(DatabasePath), @FDatabase, nil, @ErrorMessage);
+  // Try using Open_Ext to get the error message.
+  //  Res := FPlainDriver.DuckDB_Open_Ext(PAnsiChar(DatabasePath), @FDatabase, nil, @ErrorMessage);
+  CheckDuckDBError(Res, ErrorMessage);
+
   Res := FPlainDriver.Duckdb_Connect(FDatabase, @FConnection);
   CheckDuckDBError(Res, Format('Could not connect to DuckDB Database %s.', [URL.Database]));
 
@@ -450,10 +489,21 @@ begin
   //  Exit;
   LogMessage := 'DISCONNECT FROM "' + URL.Database + '"';
 
+  {$Message Hint 'Testing'}
   if Assigned(FConnection) then
+  begin
     FPlainDriver.DuckDB_Disconnect(@FConnection);
+    FConnection := nil;
+  end;
+  // The docs say only to call close if it was opened with open or open_ext, and we are using the
+  // instance cache.  Closing the database will cause a freeze if you attempt to re-login to it so
+  // the above bears out in testing.
   if Assigned(FDatabase) then
+  begin
     FPlainDriver.DuckDB_Close(@FDatabase);
+    FDatabase := nil;
+  end;
+
 
   if Assigned(DriverManager) and DriverManager.HasLoggingListener then //thread save
     DriverManager.LogMessage(lcDisconnect, URL.Protocol, LogMessage);
