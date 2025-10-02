@@ -385,8 +385,6 @@ begin
   DatabasePath := {$IFDEF UNICODE}UTF8Encode(URL.Database){$ELSE}URL.Database{$ENDIF};
 
   Res := FPlainDriver.duckdb_get_or_create_from_cache(GInstanceCache, PAnsiChar(DatabasePath), @FDatabase, nil, @ErrorMessage);
-  // Try using Open_Ext to get the error message.
-  //  Res := FPlainDriver.DuckDB_Open_Ext(PAnsiChar(DatabasePath), @FDatabase, nil, @ErrorMessage);
   CheckDuckDBError(Res, ErrorMessage);
 
   Res := FPlainDriver.Duckdb_Connect(FDatabase, @FConnection);
@@ -488,23 +486,16 @@ begin
   //if ( Closed ) or (not Assigned(PlainDriver)) then
   //  Exit;
   LogMessage := 'DISCONNECT FROM "' + URL.Database + '"';
-
-  {$Message Hint 'Testing'}
   if Assigned(FConnection) then
   begin
     FPlainDriver.DuckDB_Disconnect(@FConnection);
     FConnection := nil;
   end;
-  // The docs say only to call close if it was opened with open or open_ext, and we are using the
-  // instance cache.  Closing the database will cause a freeze if you attempt to re-login to it so
-  // the above bears out in testing.
   if Assigned(FDatabase) then
   begin
     FPlainDriver.DuckDB_Close(@FDatabase);
     FDatabase := nil;
   end;
-
-
   if Assigned(DriverManager) and DriverManager.HasLoggingListener then //thread save
     DriverManager.LogMessage(lcDisconnect, URL.Protocol, LogMessage);
   Dispose(ConSettings.ClientCodePage);
