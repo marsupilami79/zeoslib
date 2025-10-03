@@ -72,7 +72,7 @@ uses
   //Zeos drivers:
   ZDbcAdo, ZDbcASA, ZDbcDbLib, ZDbcFirebird, ZDbcInterbase6, ZDbcMySql,
   ZDbcODBCCon, ZDbcOleDB, ZDbcOracle, ZDbcPostgreSql, ZDbcSQLAnywhere,
-  ZDbcSqLite, ZDbcProxyMgmtDriver, DbcProxyStartupProcedures,
+  ZDbcSqLite, ZDbcDuckDB, ZDbcProxyMgmtDriver, DbcProxyStartupProcedures,
   ZCbor, zeosproxy_cbor_imp;
 
 type
