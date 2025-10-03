@@ -77,7 +77,6 @@ type
   protected
     FPlainDriver: TZDuckDBPlainDriver;
     FStatement: TDuckDB_Prepared_Statement;
-    FDuckResult: TDuckDB_Result;
     procedure CheckDuckDbError(AStatement: TDuckDB_Prepared_Statement);
     procedure BindParams;
     function CreateResultSet(Const DuckResult: TDuckDB_Result): IZResultSet;
@@ -203,7 +202,6 @@ end;
 destructor TZDbcDuckDBPreparedStatement.Destroy;
 begin
   FPlainDriver.DuckDB_Destroy_Prepare(@FStatement);
-  FPlainDriver.DuckDB_Destroy_Result(@FDuckResult);
   inherited;
 end;
 
@@ -223,10 +221,10 @@ function TZDbcDuckDBPreparedStatement.ExecutePrepared: Boolean;
 var
   xSQL: UTF8String;
   Res: TDuckDB_State;
+  DuckResult: TDuckDB_Result;
 begin
   // free a previous prepared statement, if there is one
   FPlainDriver.DuckDB_Destroy_Prepare(@FStatement);
-  FPlainDriver.DuckDB_Destroy_Result(@FDuckResult);
 
   xSQL := {$IFDEF UNICODE}UTF8Encode(FWSQL){$ELSE}FASQL{$ENDIF};
   Res := FPlainDriver.DuckDB_Prepare(
@@ -235,12 +233,12 @@ begin
   if Res <> DuckDBSuccess then
      CheckDuckDbError(FStatement);
   BindParams;
-  if FPlainDriver.DuckDB_Execute_Prepared(FStatement, @FDuckResult) <> DuckDBSuccess then
-    (GetConnection as IZDbcDuckDBConnection).CheckDuckDbError(@FDuckResult);
+  if FPlainDriver.DuckDB_Execute_Prepared(FStatement, @DuckResult) <> DuckDBSuccess then
+    (GetConnection as IZDbcDuckDBConnection).CheckDuckDbError(@DuckResult);
 
-  LastUpdateCount := FPlainDriver.DuckDB_Rows_Changed(@FDuckResult);
-  if FPlainDriver.DuckDB_Result_Return_Type(FDuckResult) = DUCKDB_RESULT_TYPE_QUERY_RESULT then begin
-    CreateResultSet(FDuckResult);
+  LastUpdateCount := FPlainDriver.DuckDB_Rows_Changed(@DuckResult);
+  if FPlainDriver.DuckDB_Result_Return_Type(DuckResult) = DUCKDB_RESULT_TYPE_QUERY_RESULT then begin
+    CreateResultSet(DuckResult);
     Result := True;
   end else begin
     Result := False;
