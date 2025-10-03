@@ -418,6 +418,12 @@ type
     end;
     PDuckDB_Result = ^TDuckDB_Result;
 
+    SDuckDb_Instance_Cache = packed record
+      internal_ptr: Pointer;
+    end;
+    TDuckdb_Instance_Cache = ^SDuckDB_Instance_Cache;
+    Pduckdb_instance_cache = ^TDuckDB_Instance_Cache;
+
     //! A database object. Should be closed with `duckdb_close`.
     SDuckDB_Database = packed record
 	internal_ptr: Pointer;
@@ -580,6 +586,18 @@ type
     //===--------------------------------------------------------------------===//
     // Functions
     //===--------------------------------------------------------------------===//
+
+    //===--------------------------------------------------------------------===//
+    // Instance cache
+    //===--------------------------------------------------------------------===//
+    duckdb_create_instance_cache: function: TDuckDB_Instance_Cache; stdcall;
+    duckdb_get_or_create_from_cache: function(
+      instance_cache: TDuckDB_Instance_Cache;
+      path: PAnsiChar;
+      out_database: PDuckDB_Database;
+      config: TDuckdb_Config;
+      out_error: PPAnsiChar): TDuckDB_State;
+    duckdb_destroy_instance_cache: procedure (instance_cache: PDuckDB_Instance_Cache); stdcall;
 
     //===--------------------------------------------------------------------===//
     // Open Connect
@@ -1638,6 +1656,9 @@ procedure TZDuckDBPlainDriver.LoadApi;
 begin
   { ************** Load adresses of API Functions ************* }
   with Loader do begin
+    @duckdb_create_instance_cache := GetAddress('duckdb_create_instance_cache');
+    @duckdb_get_or_create_from_cache := GetAddress('duckdb_get_or_create_from_cache');
+    @duckdb_destroy_instance_cache := GetAddress('duckdb_destroy_instance_cache');
     @DuckDB_Open := GetAddress('duckdb_open');
     @DuckDB_Open_Ext := GetAddress('duckdb_open_ext');
     @DuckDB_Close := GetAddress('duckdb_close');

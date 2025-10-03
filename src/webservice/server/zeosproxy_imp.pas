@@ -177,7 +177,8 @@ var
 
 Implementation
 
-uses config_objects, DbcProxyUtils, ZDbcXmlUtils{$IFDEF ENABLE_TOFU_CERTIFICATES}, dbcproxycertstore, types{$ENDIF};
+uses config_objects, DbcProxyUtils, ZDbcXmlUtils, zeosproxy_cbor_imp
+     {$IFDEF ENABLE_TOFU_CERTIFICATES}, dbcproxycertstore, types{$ENDIF};
 
 { TZeosProxy_ServiceImp implementation }
 function TZeosProxy_ServiceImp.Connect(
@@ -209,6 +210,8 @@ Begin
   OutProperties := UnicodeString(encodeConnectionProperties(Connection));
   Connection.Open;
   DbInfo := UnicodeString(encodeDatabaseInfo(Connection));
+  if Assigned(zeosproxy_cbor_imp.CborImp) then;
+    OutProperties := OutProperties + LineEnding + 'proxy_supportscborquery=true';
   Result := UnicodeString(ConnectionManager.AddConnection(Connection, DbName, UserName));
   if not Assigned(AuditLogger) then
     raise Exception.Create('Audit logger is not assigned.');

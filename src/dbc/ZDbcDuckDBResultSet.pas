@@ -105,6 +105,7 @@ type
     ///  if the value is SQL NULL, the
     ///  value returned is true. false otherwise.
     /// </returns>
+    destructor Destroy; override;
     function IsNull(ColumnIndex: Integer): Boolean;
     /// <summary>
     ///  Gets the value of the designated column in the current row of this
@@ -320,6 +321,12 @@ begin
   SetConcurrency(rcReadOnly);
 
   Open;
+end;
+
+destructor TZDbcDuckDBResultSet.Destroy;
+begin
+  FPlainDriver.DuckDB_Destroy_Result(@FResult);
+  inherited;
 end;
 
 function DuckTypeToZSqlType(DuckType: TDuckDB_Type): TZSQLType;

@@ -615,7 +615,7 @@ implementation
 
 uses
   Variants, Math, {$IFDEF WITH_UNITANSISTRINGS}AnsiStrings, {$ENDIF}
-  ZMessages, ZEncoding, ZFastCode;
+  ZMessages, ZEncoding, ZFastCode {$IFDEF ANSISTRCOMP_REQUIRES_POSIXSTRING}, Posix.String_{$ENDIF};
 
 { TZDefaultVariantManager }
 

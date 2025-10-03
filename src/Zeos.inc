@@ -268,6 +268,7 @@
                   {$DEFINE WITH_RTLCONSTS_SInvalidGuidArray}
                   {$DEFINE HAVE_BCDTOSTR_FORMATSETTINGS} //(Try)BCDToStr/StrToBCD has parameter FormatSettings
                   {$DEFINE WITH_TOBJECTLIST_REQUIRES_CLASSES}       //TObjectList.Remove, add ... are inlined need unit classes
+				  {$DEFINE HAVE_TFORMATSETTINGS_CREATE}
                   {$UNDEF WITH_INFINATE_DECLARED_IN_UNIT_WINDOWS} // the INFINATE constant is now declared in System.pas
                   {$IF CompilerVersion >= 23} //Delphi XE2+
 				    {$DEFINE BCDTOSTR_WITH_FORMATSETTINGS} // Delphi has a BcdToStr function with TFormatSettings as a parameter
@@ -372,6 +373,7 @@
                               {$IF CompilerVersion >= 29} //Delphi XE8+
 						        {$DEFINE ISTREAM_SEEK_LARGEUINT}
                                 {$IF CompilerVersion >= 30} //Delphi XE10 Seattle+
+								  {$DEFINE HAVE_UNIT_URLCLIENT}
                                   {$IF CompilerVersion >= 31} //Delphi XE10.1 Berlin+
                                     {$IF CompilerVersion >= 32} //Delphi XE10.2 Tokyo+
                                       {$DEFINE WITH_TRYFINALLY_RESULT_EXCEPTION_CHECK} //the compiler is able to see through try finally block, which have nothing todo initializing the result
@@ -396,6 +398,9 @@
                                           {$UNDEF WITH_TMEMOFIELD_GETASVARIANT_varNULL_BUG} //The bug is resolved.
                                           {$DEFINE USE_SYNCOBJS_FOR_INLINING} //Add SyncObjs unit to the uses list to resolve a warning about inlining
                                           {$IF CompilerVersion >= 35} //Delphi 11 Alexandria
+										    {$IFDEF ANDROID}
+											  {$DEFINE ANSISTRCOMP_REQUIRES_POSIXSTRING}
+											{$ENDIF}
                                             {$DEFINE TCERTIFICATE_HAS_PUBLICKEY}
                                             {$DEFINE MEMORYSTREAM_REALLOC_NATIVEINT} // TMemoryStream.Realloc uses NativeInt instead of Longint
                                             {$IF CompilerVersion >= 36} //Delphi 12 Athens

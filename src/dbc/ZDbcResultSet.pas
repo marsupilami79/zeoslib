@@ -1475,7 +1475,9 @@ const
 implementation
 
 uses ZMessages, ZDbcUtils, ZDbcResultSetMetadata, ZEncoding, ZFastCode
-  {$IFDEF WITH_UNITANSISTRINGS}, AnsiStrings{$ENDIF}, Math;
+  {$IFDEF WITH_UNITANSISTRINGS}, AnsiStrings{$ENDIF}
+  {$IFDEF ANSISTRCOMP_REQUIRES_POSIXSTRING}, Posix.String_{$ENDIF}
+  , Math;
 
 {$IFDEF FPC} {$PUSH} {$WARN 5024 off : Parameter "$1" not used} {$ENDIF} // parameters not used intentionally
 function CompareNothing(V1, V2: Pointer): Integer; //emergency exit for complex types we can't sort quickly like arrays, ResultSet ...

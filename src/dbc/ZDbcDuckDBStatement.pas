@@ -82,6 +82,7 @@ type
     function CreateResultSet(Const DuckResult: TDuckDB_Result): IZResultSet;
   public
     constructor Create(const Connection: IZConnection; const SQL: string; Info: TStrings);
+    destructor Destroy; override;
 
     /// <summary>
     ///   Executes the SQL query in this PreparedStatement object
@@ -196,6 +197,12 @@ begin
   end;
   if Result <> nil then
     FOpenResultSet := Pointer(Result);
+end;
+
+destructor TZDbcDuckDBPreparedStatement.Destroy;
+begin
+  FPlainDriver.DuckDB_Destroy_Prepare(@FStatement);
+  inherited;
 end;
 
 function TZDbcDuckDBPreparedStatement.ExecuteQueryPrepared: IZResultSet;

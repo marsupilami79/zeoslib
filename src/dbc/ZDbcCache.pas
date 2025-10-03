@@ -345,7 +345,8 @@ const
 implementation
 
 uses ZFastcode, Math, ZMessages, ZDbcUtils, ZEncoding
-  {$IFDEF WITH_UNITANSISTRINGS}, AnsiStrings{$ENDIF};
+  {$IFDEF WITH_UNITANSISTRINGS}, AnsiStrings{$ENDIF}
+  {$IFDEF ANSISTRCOMP_REQUIRES_POSIXSTRING}, Posix.String_{$ENDIF};
 
 const
   PAnsiInc = SizeOf(Cardinal);

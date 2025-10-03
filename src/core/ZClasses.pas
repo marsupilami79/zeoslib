@@ -1018,7 +1018,7 @@ type
   protected
     function GetSize: Int64; override;
     procedure SetSize(const NewSize: Int64); override;
-    procedure OleCheck(Value : HResult);inline;
+    procedure OleCheck(Value : HResult); {$IFDEF WITH_INLINE}inline;{$ENDIF}
   public
     constructor Create(Stream: IStream);
     function Read(var Buffer; Count: Integer): Integer; override;

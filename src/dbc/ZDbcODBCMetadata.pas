@@ -1982,7 +1982,6 @@ function TODBCDatabaseMetadataW.UncachedGetProcedureColumns(const Catalog: strin
   const ColumnNamePattern: string): IZResultSet;
 var
   RS: IZResultSet;
-  Len: NativeUInt;
   HSTMT: SQLHSTMT;
   SQLType: TZSQLType;
   Cat, Schem, Proc, Col: UnicodeString;
@@ -1994,7 +1993,6 @@ begin
   Schem := DecomposeObjectString(SchemaPattern);
   Proc := DecomposeObjectString(ProcedureNamePattern);
   Col := DecomposeObjectString(ColumnNamePattern);
-  {$IFDEF WITH_VAR_INIT_WARNING}Len := 0;{$ENDIF}
   //skope of FPC !const! Connection: IZODBCConnection in methods is different to Delphi
   //we need to localize the connection
   ODBCConnection := GetConnection as IZODBCConnection;

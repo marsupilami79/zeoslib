@@ -158,7 +158,7 @@ var
   CachedResultSet: TZCachedResultSet;
   CachedResolver: IZCachedResolver;
 begin
-  NativeResultSet := TZDbcProxyResultSet.Create(Connection, SQL, ResultStr);
+  NativeResultSet := TZDbcProxyResultSet.Create(Connection, SQL, {$IFNDEF UNICODE}UTF8Decode({$ENDIF}ResultStr{$IFNDEF UNICODE}){$ENDIF});
   NativeResultSet.SetConcurrency(rcReadOnly);
   LastUpdateCount := NativeResultSet.GetUpdateCount;
 
@@ -246,7 +246,7 @@ end;
 {$ELSE}
 function BcdParamToString(const Value: TBCD): String;
 begin
-  Result := BcdToSQLUni(Value);
+  Result := {$IFDEF UNICODE}BcdToSQLUni{$ELSE}BcdToSQLRaw{$ENDIF}(Value);
 end;
 {$ENDIF}
 
@@ -321,7 +321,7 @@ begin
             Line := DateTimeParamToStr(ClientVarManager.GetAsDateTime(InParamValues[x]));
           stAsciiStream, stUnicodeStream:
             if (InParamValues[x].VType = vtInterface) and Supports(InParamValues[x].VInterface, IZBlob, TempBlob) then begin
-              Line := StrParamToStr(TempBlob.GetUnicodeString);
+              Line := StrParamToStr(TempBlob.{$IFDEF UNICODE}GetUnicodeString{$ELSE}GetUTF8String{$ENDIF});
             end else begin
               Line := StrParamToStr(ClientVarManager.GetAsString(InParamValues[x]));
             end;
@@ -370,19 +370,21 @@ var
   CborItem: TCborItem;
   CborRes: TCborArr;
   S: Integer;
+  UseCbor: Boolean;
 const
   ResultSetStart = '<resultset ';
-  UseCbor = False;
   ZCborChangedRows = 1;
   ZCborResultSet = 2;
   ZCborError = 3;
 begin
+  UseCbor := (Connection as IZDbcProxyConnection).SupportsCborQuery;
+
   Params := EncodeParams;
 
   xSQL := {$IFDEF UNICODE}FWSQL{$ELSE}UTF8Decode(FASQL){$ENDIF};
 
   if not UseCbor then begin
-    ResultStr := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatement(xSQL, Params, GetMaxRows);
+    ResultStr := {$IFNDEF UNICODE}UTF8Encode({$ENDIF}(Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatement(xSQL, {$IFNDEF UNICODE}UTF8ToString({$ENDIF}Params{$IFNDEF UNICODE}){$ENDIF}, GetMaxRows){$IFNDEF UNICODE}){$ENDIF};
 
     if copy(ResultStr, 1, length(ResultSetStart)) = ResultSetStart  then begin
       Result := True;
@@ -394,7 +396,7 @@ begin
     end;
   end else begin
     {$IFNDEF NO_SAFECALL}
-    CborStrI := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, Params, GetMaxRows);
+    CborStrI := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, {$IFNDEF UNICODE}UTF8ToString({$ENDIF}Params{$IFNDEF UNICODE}){$ENDIF}, GetMaxRows);
     CborStr := TZOleStream.Create(CborStrI);
     {$ELSE}
     CborStr := (Connection as IZDbcProxyConnection).GetConnectionInterface.ExecuteStatementCb(xSQL, Params, GetMaxRows);

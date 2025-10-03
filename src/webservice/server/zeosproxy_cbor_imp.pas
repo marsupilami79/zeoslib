@@ -300,5 +300,8 @@ begin
   Result := EncList;
 end;
 
+initialization
+  CborImp := nil;
+
 end.
 
