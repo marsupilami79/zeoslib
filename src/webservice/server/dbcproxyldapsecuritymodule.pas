@@ -108,6 +108,7 @@ begin
       Ldap.Sock.SSL.VerifyCert := True;
     end;
     Ldap.TargetHost := FHostName;
+	Ldap.TargetPort := IntToStr(FPort);
     Ldap.UserName := Format(FUserNameMask, [UserName]);
     Ldap.Password := Password;
     if FUseSSL then
