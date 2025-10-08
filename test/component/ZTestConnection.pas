@@ -165,12 +165,17 @@ begin
     Connection.OnLogin := ConnLogin;
     try
       Connection.Connect;
-      if (Connection.DbcConnection.GetServerProvider <> spSQLite) and
-         not StrToBoolEx(DataBaseStrings.Values[ConnProps_TrustedConnection]) and
-         not StrToBoolEx(DataBaseStrings.Values[ConnProps_Trusted]) and
-         not ((Connection.DbcConnection.GetServerProvider = spIB_FB) and //in case of embedded this test is not resolvable
+      if (Connection.DbcConnection.GetServerProvider <> spSQLite)
+{$IF DEFINED(ENABLE_ODBC) OR DEFINED(ENABLE_OLEDB) OR DEFINED(ENABLE_ADO)}
+        and not StrToBoolEx(DataBaseStrings.Values[ConnProps_TrustedConnection])
+        and not StrToBoolEx(DataBaseStrings.Values[ConnProps_Trusted])
+{$IFEND}
+{$IF DEFINED(ENABLE_FIREBIRD) OR DEFINED(ENABLE_INTERBASE)}
+        and not ((Connection.DbcConnection.GetServerProvider = spIB_FB) and //in case of embedded this test is not resolvable
           (Connection.DbcConnection.GetMetadata.GetDatabaseInfo as IZInterbaseDatabaseInfo).HostIsFireBird and
-          (Connection.DbcConnection.GetHostVersion >= 3000000) and (Connection.HostName = '')) then
+          (Connection.DbcConnection.GetHostVersion >= 3000000) and (Connection.HostName = ''))
+{$IFEND}
+      then
         Fail('We never expect to reach this place. It means we were allowed to login using invalid user credentials.');
     except
       CheckEquals(false,Connection.Connected);
