@@ -299,12 +299,10 @@ const
 
 {$IFEND}
 
-{$IF DEFINED(ENABLE_ORACLE) OR DEFINED(ENABLE_POSTGRESQL) OR DEFINED(ENABLE_INTERBASE) OR DEFINED(ENABLE_FIREBIRD)}
   // Type: STR, like Field1[, Field2, ...] (separators: "," or ";")
   // List of fields which will get their values on INSERT
   // (by INSERT...RETURNING) construction.
   DSProps_InsertReturningFields = 'InsertReturningFields';
-{$IFEND}
 
 {$IF DEFINED(ENABLE_ADO) OR DEFINED(ENABLE_OLEDB)}
   /// <summary>Defines the driver Provider as a String. This property is used
@@ -877,17 +875,19 @@ const
   ConnProps_OCIMultiThreaded = 'OCIMultiThreaded';
 {$ENDIF}
 
-{$IF DEFINED(ENABLE_ASA) OR DEFINED(ENABLE_SQLANY)}
   { Parameters used for constructing ConnectionString.
     Refer to ASA manual for types and acceptable values of these parameters }
     //see: http://infocenter.sybase.com/help/topic/com.sybase.help.sqlanywhere.12.0.1/dbadmin/how-introduction-connect.html
+{$IF DEFINED(ENABLE_ASA) OR DEFINED(ENABLE_SQLANY) OR DEFINED(ENABLE_ODBC)}
+  ConnProps_CharSet = 'CharSet';
+{$IFEND}
+{$IF DEFINED(ENABLE_ASA) OR DEFINED(ENABLE_SQLANY)}
   ConnProps_APP = 'APP';
   ConnProps_AppInfo = 'AppInfo';
   ConnProps_AutoStart = 'AutoStart';
   ConnProps_ASTART = 'ASTART';
   ConnProps_AutoStop = 'AutoStop';
   ConnProps_ASTOP = 'ASTOP';
-  ConnProps_CharSet = 'CharSet';
   ConnProps_CS = 'CS';
   ConnProps_CommBufferSize = 'CommBufferSize';
   ConnProps_CBSIZE = 'CBSIZE';
