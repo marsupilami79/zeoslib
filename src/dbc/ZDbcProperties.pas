@@ -270,7 +270,7 @@ const
 
   { Parameters common for several drivers }
 
-{$IF DEFINED(ENABLE_ORACLE) OR DEFINED(ENABLE_ODBC) OR DEFINED(ENABLE_OLEDB)}
+{$IF DEFINED(ENABLE_ORACLE) OR DEFINED(ENABLE_ODBC) OR DEFINED(ENABLE_OLEDB) OR DEFINED(ENABLE_SQLANY)}
   { Parameters that are for datasets and statements but could be set for connections
     (see comment above) }
 
@@ -359,9 +359,6 @@ const
   // If set, executes 'SET ANSI_PADDING ON' on connect
   ConnProps_AnsiPadding = 'ANSI_PADDING';
   // Type: STR
-  // The application name to send to the server
-  ConnProps_AppName = 'AppName';
-  // Type: STR
   // The language the server should use for messages
   ConnProps_Language = 'language';
   // Type: STR
@@ -383,6 +380,12 @@ const
   ConnProps_Secure = 'secure';
   ConnProps_Trusted = 'trusted';
 {$ENDIF}
+
+{$IF DEFINED(ENABLE_DBLIB) OR DEFINED(ENABLE_SQLANY)}
+  // Type: STR
+  // The application name to send to the server
+  ConnProps_AppName = 'AppName';
+{$IFEND}
 
 {$IFDEF ENABLE_MYSQL}
 
@@ -874,7 +877,7 @@ const
   ConnProps_OCIMultiThreaded = 'OCIMultiThreaded';
 {$ENDIF}
 
-{$IFDEF ENABLE_ASA}
+{$IF DEFINED(ENABLE_ASA) OR DEFINED(ENABLE_SQLANY)}
   { Parameters used for constructing ConnectionString.
     Refer to ASA manual for types and acceptable values of these parameters }
     //see: http://infocenter.sybase.com/help/topic/com.sybase.help.sqlanywhere.12.0.1/dbadmin/how-introduction-connect.html
@@ -962,7 +965,7 @@ const
   ConnProps_UNC = 'UNC';
   { Parameters that are for datasets and statements but could be set for connections
     (see comment above) }
-{$ENDIF}
+{$IFEND}
 
 {$IFDEF ENABLE_OLEDB}
   // Type: INT
@@ -990,15 +993,18 @@ const
   ///  for the ODBC connection only. Example:
   ///  Properties.Values[ConnProps_DRIVER]={SQL Server Native Client 11.0}</summary>
   ConnProps_DRIVER = 'DRIVER';
-  /// <summary>Defines the server as a String. This property is used
-  ///  for the ODBC connection only. Example:
-  ///  Properties.Values[ConnProps_Server]=(localdb)\ZeosLib</summary>
-  ConnProps_Server = 'Server';
   // Type: Number
   // Default is 380 which is mapped to version 3.8
   // Also allowed is 3 which is mapped to version 3.0
   ConnProps_ODBC_Version = 'ODBC_Version';
 {$ENDIF}
+
+{$IF DEFINED(ENABLE_ODBC) OR DEFINED(ENABLE_SQLANY)}
+  /// <summary>Defines the server as a String. This property is used
+  ///  for the ODBC connection only. Example:
+  ///  Properties.Values[ConnProps_Server]=(localdb)\ZeosLib</summary>
+  ConnProps_Server = 'Server';
+{$IFEND}
 
 {$IFNDEF ZEOS_DISABLE_PROXY}
   /// <summary>

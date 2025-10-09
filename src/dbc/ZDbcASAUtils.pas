@@ -56,11 +56,12 @@ interface
 
 {$I ZDbc.inc}
 
-{$IFNDEF ZEOS_DISABLE_ASA}
 uses
   Classes, {$IFDEF MSEgui}mclasses,{$ENDIF} SysUtils, Types, FmtBCD,
   ZSysUtils, ZVariant, ZCompatibility,
   ZPlainASADriver, ZDbcIntfs, ZDbcLogging, ZDbcASA, ZExceptions;
+
+{$IFNDEF ZEOS_DISABLE_ASA}
 
 const
   StdVars = 20;
@@ -147,8 +148,6 @@ function ConvertASATypeToSQLType(const SQLType: SmallInt): TZSQLType;
 }
 function ConvertASATypeToString( SQLType: SmallInt): String;
 
-function ConvertASAJDBCToSqlType(const FieldType: SmallInt): TZSQLType;
-
 const SQLType2ASATypeMap: array[TZSQLType] of SmallInt =
   (DT_NOTYPE, //
     //fixed size DataTypes first
@@ -177,6 +176,9 @@ const SQLType2ASASizeMap: array[TZSQLType] of SmallInt =
     0, SizeOf(TZASABlobStruct)-1);
 
 {$ENDIF ZEOS_DISABLE_ASA}
+
+function ConvertASAJDBCToSqlType(const FieldType: SmallInt): TZSQLType;
+
 implementation
 {$IFNDEF ZEOS_DISABLE_ASA}
 
@@ -716,6 +718,8 @@ begin
   end;
 end;
 
+{$ENDIF ZEOS_DISABLE_ASA}
+
 {**
   Converts an ODBC native types into ZDBC SQL types.
   @param FieldType dblibc native field type.
@@ -745,6 +749,5 @@ begin
   end;
 end;
 
-{$ENDIF ZEOS_DISABLE_ASA}
 end.
 
