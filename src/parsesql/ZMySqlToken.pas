@@ -60,17 +60,11 @@ interface
   {$DEFINE EMPTY_ZMySqlToken}
 {$IFEND}
 
-{$IFNDEF EMPTY_ZMySqlToken}
-
 uses
   Classes, {$IFDEF MSEgui}mclasses,{$ENDIF} SysUtils,
   ZSysUtils, ZTokenizer, ZGenericSqlToken, ZCompatibility;
 
 type
-
-  {** Implements a MySQL-specific number state object. }
-  TZMySQLNumberState = TZGenericSQLHexNumberState;
-
   {** Implements a MySQL-specific quote string state object. }
   TZMySQLQuoteState = class (TZQuoteState)
   public
@@ -83,6 +77,11 @@ type
     function EncodeString(const Value: string; QuoteChar: Char): string; override;
     function DecodeToken(const Value: TZToken; QuoteChar: Char): string; override;
   end;
+
+  {$IFNDEF EMPTY_ZMySqlToken}
+
+  {** Implements a MySQL-specific number state object. }
+  TZMySQLNumberState = TZGenericSQLHexNumberState;
 
   {**
     This state will either delegate to a comment-handling
@@ -115,8 +114,6 @@ type
 {$ENDIF EMPTY_ZMySqlToken}
 
 implementation
-
-{$IFNDEF EMPTY_ZMySqlToken}
 
 {$IFDEF FAST_MOVE}uses ZFastCode;{$ENDIF}
 
@@ -181,6 +178,8 @@ begin
     Result := QuoteChar + EncodeCString(Value) + QuoteChar
   else Result := Value;
 end;
+
+{$IFNDEF EMPTY_ZMySqlToken}
 
 { TZMySQLCommentState }
 
