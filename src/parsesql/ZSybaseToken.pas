@@ -61,7 +61,7 @@ interface
   {$DEFINE EMPTY_ZSybaseToken}
 {$IFEND}
 
-{$IFNDEF DEFINE EMPTY_ZSybaseToken}
+{$IFNDEF EMPTY_ZSybaseToken}
 
 uses ZTokenizer, ZGenericSqlToken;
 
