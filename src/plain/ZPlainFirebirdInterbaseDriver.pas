@@ -2993,7 +2993,7 @@ type
 
   { TZFirebirdBaseDriver }
 
-  {$IFNDEF ZEOS_DISABLE_INTERBASE}
+  {$IF NOT DEFINED(ZEOS_DISABLE_INTERBASE) OR NOT DEFINED(ZEOS_DISABLE_FIREBIRD)}
   TZInterbasePlainDriver = class (TZInterbaseFirebirdPlainDriver,
     IZInterbasePlainDriver)
   protected
@@ -3012,7 +3012,7 @@ type
     function GetProtocol: string; override;
     function GetDescription: string; override;
   end;
-  {$ENDIF ZEOS_DISABLE_INTERBASE}
+  {$IFEND ZEOS_DISABLE_INTERBASE}
 
   {** Implements a native driver for Firebird }
   TZFirebirdPlainDriver = class (TZInterbasePlainDriver)
@@ -3207,7 +3207,7 @@ end;
 
 { TZInterbasePlainDriver }
 
-{$IFNDEF ZEOS_DISABLE_INTERBASE}
+{$IF NOT DEFINED(ZEOS_DISABLE_INTERBASE) OR NOT DEFINED(ZEOS_DISABLE_FIREBIRD)}
 
 {$IFDEF ENABLE_INTERBASE_CRYPT}
 procedure TZInterbasePlainDriver.Initialize(const Location: String = '');
@@ -3282,7 +3282,7 @@ function TZInterbasePlainDriver.GetProtocol: string;
 begin
   Result := 'interbase';
 end;
-{$ENDIF ZEOS_DISABLE_INTERBASE}
+{$IFEND ZEOS_DISABLE_INTERBASE}
 
 { TZFirebirdPlainDriver }
 
