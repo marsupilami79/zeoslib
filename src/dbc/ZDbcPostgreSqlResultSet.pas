@@ -55,7 +55,6 @@ interface
 
 {$I ZDbc.inc}
 
-{$IFNDEF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
 uses
   {$IFDEF MORMOT2}
   mormot.db.core, mormot.core.datetime, mormot.core.text, mormot.core.base,
@@ -70,6 +69,14 @@ uses
   ZClasses, ZDbcCachedResultSet, ZDbcPostgreSql, ZExceptions;
 
 type
+  {** Implements a specialized cached resolver for PostgreSQL. }
+  TZPostgreSQLCachedResolver = class(TZGenerateSQLCachedResolver)
+  protected
+    function CheckKeyColumn(ColumnIndex: Integer): Boolean; override;
+  end;
+
+  {$IFNDEF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
+
   /// <summary>Implements Postgres column information object.</summary>
   TZPGColumnInfo = class(TZColumnInfo)
   public
@@ -540,12 +547,6 @@ type
       Data: PAnsiChar);
   end;
 
-  {** Implements a specialized cached resolver for PostgreSQL. }
-  TZPostgreSQLCachedResolver = class(TZGenerateSQLCachedResolver)
-  protected
-    function CheckKeyColumn(ColumnIndex: Integer): Boolean; override;
-  end;
-
   {** Implements a specialized cached resolver for PostgreSQL version 7.4 and up. }
   TZPostgreSQLCachedResolverV74up = class(TZPostgreSQLCachedResolver)
   public
@@ -605,7 +606,6 @@ type
 
 {$ENDIF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
 implementation
-{$IFNDEF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
 
 uses
   {$IFDEF WITH_UNITANSISTRINGS}AnsiStrings,{$ENDIF} Math, SysConst, TypInfo,
@@ -613,6 +613,23 @@ uses
   ZGenericSqlAnalyser, ZSelectSchema,
   ZDbcPostgreSqlMetadata, ZDbcMetadata, ZDbcPostgreSqlUtils, ZDbcUtils,
   ZDbcProperties;
+
+{ TZPostgreSQLCachedResolver }
+
+{**
+  Checks is the specified column can be used in where clause.
+  @param ColumnIndex an index of the column.
+  @returns <code>true</code> if column can be included into where clause.
+}
+function TZPostgreSQLCachedResolver.CheckKeyColumn(ColumnIndex: Integer): Boolean;
+begin
+  Result := (Metadata.GetTableName(ColumnIndex) <> '')
+    and (Metadata.GetColumnName(ColumnIndex) <> '')
+    and Metadata.IsSearchable(ColumnIndex)
+    and not (Metadata.GetColumnType(ColumnIndex) in [stUnknown, stBinaryStream]);
+end;
+
+{$IFNDEF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
 
 { TZPostgreSQLResultSet }
 
@@ -2764,21 +2781,6 @@ begin
     PGMetaData := nil;
   end;
   Loaded := True;
-end;
-
-{ TZPostgreSQLCachedResolver }
-
-{**
-  Checks is the specified column can be used in where clause.
-  @param ColumnIndex an index of the column.
-  @returns <code>true</code> if column can be included into where clause.
-}
-function TZPostgreSQLCachedResolver.CheckKeyColumn(ColumnIndex: Integer): Boolean;
-begin
-  Result := (Metadata.GetTableName(ColumnIndex) <> '')
-    and (Metadata.GetColumnName(ColumnIndex) <> '')
-    and Metadata.IsSearchable(ColumnIndex)
-    and not (Metadata.GetColumnType(ColumnIndex) in [stUnknown, stBinaryStream]);
 end;
 
 { TZPostgreSQLCachedResolverV74up }
