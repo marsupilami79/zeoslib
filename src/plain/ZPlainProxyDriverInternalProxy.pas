@@ -249,6 +249,9 @@ begin
       CBORUrl := copy(ServiceEndpoint, 1, x);
       CBORUrl := CBORUrl + 'ZeosProxy/cborquery';
     end;
+    {$IFDEF TCERTIFICATE_HAS_PUBLICKEY}
+    HttpClient.OnValidateServerCertificate := ValidateServerCertificate;
+    {$ENDIF}
     {$ENDIF}
   end else begin
     FreeAndNil(FRIO);
