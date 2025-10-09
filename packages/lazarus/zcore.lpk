@@ -29,7 +29,7 @@
     </CompilerOptions>
     <Description Value="Zeos Core Classes and Interfaces"/>
     <Version Major="8"/>
-    <Files Count="17">
+    <Files Count="19">
       <Item1>
         <Filename Value="../../src/core/ZClasses.pas"/>
         <UnitName Value="ZClasses"/>
@@ -102,6 +102,10 @@
         <Filename Value="../../src/core/ZExceptions.pas"/>
         <UnitName Value="ZExceptions"/>
       </Item18>
+      <Item19>
+        <Filename Value="../../src/core/ZCbor.pas"/>
+        <UnitName Value="ZCbor"/>
+      </Item19>	  
     </Files>
     <RequiredPkgs Count="1">
       <Item1>
