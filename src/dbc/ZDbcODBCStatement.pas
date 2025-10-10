@@ -519,12 +519,22 @@ begin
     case SP of // copied from the same place in ZDbcProxyStatement.
       // The following cached resolvers cannot be used, because they need handles
       // from their databases: ADO, MySQL, SQLite
+{$IFDEF ENABLE_ASA}
       spASA: CachedResolver := TZASACachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
-      spMSSQL, spASE: CachedResolver := TZDBLibCachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
+{$ENDIF}
+{$IFDEF ENABLE_DBLIB}
+       spMSSQL, spASE: CachedResolver := TZDBLibCachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
+{$ENDIF}       
+{$IFDEF ENABLE_FIREBIRD}
       //spIB_FB: CachedResolver := TZInterbase6CachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
       spIB_FB: CachedResolver := TZInterbaseFirebirdCachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
+{$ENDIF}
+{$IFDEF ENABLE_ORACLE}
       spOracle: CachedResolver := TZOracleCachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
+{$ENDIF}
+{$IFDEF ENABLE_POSTGRESQL}
       spPostgreSQL: CachedResolver := TZPostgreSQLCachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
+{$ENDIF}
       else CachedResolver := TZGenericCachedResolver.Create(self as IZStatement, NativeResultSet.GetMetaData) as IZCachedResolver;
     end;
 
