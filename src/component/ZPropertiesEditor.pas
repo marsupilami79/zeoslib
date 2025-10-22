@@ -1401,6 +1401,14 @@ const
     Providers: (Count: 1; Items: @cPostgreSQLProvider);
     Protocols: (Count: 1; Items: @AllPostgreSQL);
   );
+  ZProp_PG_NeverUseHostaddr : TZProperty = (
+    Name: DSProps_PgNeverUseHostAddr;
+    Purpose: 'Normally Zeos uses the hostaddr property in the PostgreSQL connection string if an IP address is detected. Setting this property to true will force Zeos to always use the host property. This can help in setups where the GSS API is used in combination with IP addresses.';
+    ValueType: pvtEnum; LevelTypes: [pltConnection];
+    Values: cBoolEnum; Default: cBoolTrue; Alias: '';
+    Providers: (Count: 1; Items: @cPostgreSQLProvider);
+    Protocols: (Count: 1; Items: @AllPostgreSQL);
+  );
 {$ENDIF}
 {$IFDEF ENABLE_MYSQL}
   const

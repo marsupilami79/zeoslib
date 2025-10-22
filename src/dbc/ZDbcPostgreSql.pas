@@ -766,6 +766,7 @@ function TZPostgreSQLConnection.BuildConnectStr: RawByteString;
 var
   ConnectTimeout, Cnt: Integer;
   SQLWriter: TZRawSQLStringWriter;
+  NeverUseHostaddr: Boolean;
   //parameters should be separated by whitespace
   procedure AddParamToResult(const AParam: RawByteString;
     const AValue: String);
@@ -782,10 +783,12 @@ begin
   //Init the result to empty string.
   Result := '';
   Cnt := 0;
+  NeverUseHostaddr := StrToBoolDef(GetParameters.Values[DSProps_PgNeverUseHostAddr], false);
+
   SQLWriter := TZRawSQLStringWriter.Create(512);
   //Entering parameters from the ZConnection
   if HostName <> '' then begin
-    If IsIpAddr(HostName) then
+    If IsIpAddr(HostName) and not NeverUseHostaddr then
       AddParamToResult('hostaddr', HostName)
     else
       AddParamToResult('host', HostName);

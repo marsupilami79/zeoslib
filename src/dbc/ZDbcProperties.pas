@@ -562,6 +562,12 @@ const
   /// <summary>Sets Listener interval in milliseconds.</summary>
   /// <default>250</default>
   ELProps_ListernerInterval = 'ListernerInterval';
+  // Type: BOOLEAN
+  // By default Zeos will use the hostaddr parameter if it detects an IP address.
+  // This parameter disables this behavior. This an help in setups where GSSAPI
+  // gets used. See the following thread in the forums:
+  // https://zeoslib.sourceforge.io/viewtopic.php?t=249508
+  DSProps_PgNeverUseHostAddr = 'pg_never_use_hostaddr';
 {$ENDIF}
 
 {$IF defined(ENABLE_INTERBASE) OR DEFINED(ENABLE_FIREBIRD)}
