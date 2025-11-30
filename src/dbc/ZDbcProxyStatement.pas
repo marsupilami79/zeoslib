@@ -61,7 +61,7 @@ uses
   {$IF defined(UNICODE) and not defined(WITH_UNICODEFROMLOCALECHARS)}Windows,{$IFEND}
   ZDbcIntfs, ZDbcBeginnerStatement, ZDbcLogging,
   ZCompatibility, ZVariant, ZDbcGenericResolver, ZDbcCachedResultSet,
-  ZDbcUtils;
+  ZDbcUtils, ZExceptions;
 
 type
   { TZProxyPreparedStatement }
@@ -127,6 +127,9 @@ type
     function ExecutePrepared: Boolean; override;
   end;
 
+  EZRemoteSqlException = class(EZSQLException)
+  end;
+
 {$ENDIF ENABLE_PROXY} //if set we have an empty unit
 implementation
 {$IFDEF ENABLE_PROXY} //if set we have an empty unit
@@ -137,7 +140,7 @@ uses
   ZEncoding, ZTokenizer, ZClasses, {$IFNDEF NO_SAFECALL}ActiveX,{$ENDIF}
   // For the resolvers:
   ZDbcFirebirdInterbase, ZDbcASA,ZDbcDbLibResultSet, ZDbcOracle, ZDbcPostgreSqlResultSet,
-  TypInfo, Variants, ZBase64, ZExceptions{$IFDEF ZEOS73UP}, FmtBcd{$ENDIF}
+  TypInfo, Variants, ZBase64{$IFDEF ZEOS73UP}, FmtBcd{$ENDIF}
   {$IF defined(NO_INLINE_SIZE_CHECK) and not defined(UNICODE) and defined(MSWINDOWS)},Windows{$IFEND}
   {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFDEF FPC}, ComObj{$ENDIF};
 
@@ -432,7 +435,7 @@ begin
         end;
 
         ZCborError:
-          raise EZSQLException.Create(String((CborRes.Items[1] as TCborUtf8String).Value));
+          raise EZRemoteSqlException.Create(String((CborRes.Items[1] as TCborUtf8String).Value));
         else
           raise EZSQLException.Create('Unknon CBOR query result type: ' + IntToStr((CborRes.Items[0] as TCborUINTItem).Value));
       end;

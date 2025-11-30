@@ -1959,6 +1959,7 @@ var
   ColumnInfo: TZColumnInfo;
   FieldCount: Integer;
   ColumnItem: TCborArr;
+  CborItem: TCborItem;
 const
   CatalogNameIdx = 0;
   ColumnCodePageIdx = 1;
@@ -2042,7 +2043,11 @@ begin
           end;
       end;
       DefaultValue := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[DefaultValueIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
-      Precision := (ColumnItem.Items[PrecisionIdx] as TCborUINTItem).Value;
+      CborItem := ColumnItem.Items[PrecisionIdx];
+      if CborItem is TCborUINTItem then
+        Precision := (CborItem as TCborUINTItem).Value
+      else
+        Precision := (CborItem as TCborNegIntItem).Value;
       Scale := (ColumnItem.Items[ScaleIdx] as TCborUINTItem).Value;
       SchemaName := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[SchemaNameIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};
       TableName := {$IFDEF UNICODE}UTF8ToString({$ENDIF}(ColumnItem.Items[TableNameIdx] as TCborUtf8String).Value{$IFDEF UNICODE}){$ENDIF};

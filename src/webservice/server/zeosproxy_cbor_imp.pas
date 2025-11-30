@@ -201,6 +201,7 @@ var
   ColInfo: TCborArr;
   MD: IZResultSetMetadata;
   x: Integer;
+  Precision: Integer;
 begin
   EncList := TCborArr.Create;
   try
@@ -213,7 +214,11 @@ begin
       ColInfo.Add(TCborUtf8String.Create(MD.GetColumnName(x)));
       ColInfo.Add(TCborUINTItem.Create(Ord(MD.GetColumnType(x))));
       ColInfo.Add(TCborUtf8String.Create(MD.GetDefaultValue(x)));
-      ColInfo.Add(TCborUINTItem.Create(MD.GetPrecision(x)));
+      Precision := MD.GetPrecision(x);
+      if Precision >= 0 then
+        ColInfo.Add(TCborUINTItem.Create(Precision))
+      else
+        ColInfo.Add(TCborNegIntItem.Create(Precision));
       ColInfo.Add(TCborUINTItem.Create(MD.GetScale(x)));
       ColInfo.Add(TCborUtf8String.Create(MD.GetSchemaName(x)));
       ColInfo.Add(TCborUtf8String.Create(MD.GetTableName(x)));
