@@ -422,7 +422,7 @@ function TDbcProxyIniConfigManager.GetSecurityConfig(const Name: String): IZDbcP
 var
   CfgName: String;
 begin
-  CfgName := FSecurityPrefix + '.' + Name;
+  CfgName := FSecurityPrefix + Name;
   if not FIniFile.SectionExists(CfgName) then raise
     EZSQLException.Create(Format('Could not find section %s', [CfgName]));
   Result := TDbcProxyIniKeyValueProvider.Create(self, FIniFile, CfgName) as IZDbcProxyKeyValueStore;
@@ -432,7 +432,7 @@ function TDbcProxyIniConfigManager.GetDatbaseConfig(const Name: String): IZDbcPr
 var
   CfgName: String;
 begin
-  CfgName := FDbPrefix + '.' + Name;
+  CfgName := FDbPrefix + Name;
   if not FIniFile.SectionExists(CfgName) then raise
     EZSQLException.Create(Format('Could not find section %s', [CfgName]));
   Result := TDbcProxyIniKeyValueProvider.Create(self, FIniFile, CfgName) as IZDbcProxyKeyValueStore;
