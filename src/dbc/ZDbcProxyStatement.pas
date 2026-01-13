@@ -374,13 +374,17 @@ var
   CborRes: TCborArr;
   S: Integer;
   UseCbor: Boolean;
+  UseCborStr: String;
 const
   ResultSetStart = '<resultset ';
   ZCborChangedRows = 1;
   ZCborResultSet = 2;
   ZCborError = 3;
 begin
-  UseCbor := (Connection as IZDbcProxyConnection).SupportsCborQuery;
+  UseCborStr := GetParameters.Values['usecbor'];
+  if UseCborStr = '' then
+    UseCborStr := GetConnection.GetParameters.Values['usecbor'];
+  UseCbor := StrToBoolDef(UseCborStr, false);
 
   Params := EncodeParams;
 
