@@ -137,12 +137,17 @@ implementation
 uses
   {$IFDEF WITH_UNITANSISTRINGS}AnsiStrings, {$ENDIF}
   ZSysUtils, ZFastCode, ZMessages, ZDbcProxy, ZDbcProxyResultSet, ZDbcProxyUtils,
-  ZEncoding, ZTokenizer, ZClasses, {$IFNDEF NO_SAFECALL}ActiveX,{$ENDIF}
+  ZEncoding, ZTokenizer, ZClasses,
+  {$IFNDEF FPC}
+    {$IFNDEF NO_SAFECALL}ActiveX,{$ENDIF}
+  {$ELSE}
+    {$IFDEF WINDOWS}AxtiveX,{$ENDIF}
+  {$ENDIF}
   // For the resolvers:
   ZDbcFirebirdInterbase, ZDbcASA,ZDbcDbLibResultSet, ZDbcOracle, ZDbcPostgreSqlResultSet,
   TypInfo, Variants, ZBase64{$IFDEF ZEOS73UP}, FmtBcd{$ENDIF}
   {$IF defined(NO_INLINE_SIZE_CHECK) and not defined(UNICODE) and defined(MSWINDOWS)},Windows{$IFEND}
-  {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFDEF FPC}, ComObj{$ENDIF};
+  {$IFDEF NO_INLINE_SIZE_CHECK}, Math{$ENDIF}{$IFDEF FPC}{$IFDEF WINDOWS}, ComObj{$ELSE}, Types{$ENDIF}{$ENDIF};
 
 var
   ProxyFormatSettings: TFormatSettings;
