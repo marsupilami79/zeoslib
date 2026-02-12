@@ -141,7 +141,7 @@ uses
   {$IFNDEF FPC}
     {$IFNDEF NO_SAFECALL}ActiveX,{$ENDIF}
   {$ELSE}
-    {$IFDEF WINDOWS}AxtiveX,{$ENDIF}
+    {$IFDEF WINDOWS}ActiveX,{$ENDIF}
   {$ENDIF}
   // For the resolvers:
   ZDbcFirebirdInterbase, ZDbcASA,ZDbcDbLibResultSet, ZDbcOracle, ZDbcPostgreSqlResultSet,
