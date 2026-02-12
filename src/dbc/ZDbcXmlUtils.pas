@@ -152,6 +152,7 @@ function ConvertBcd(const RS: IZResultSet; Const Idx: Integer): String;
 var
   BCD: TBCD;
 begin
+  BCD := 0;
   RS.GetBigDecimal(Idx, BCD);
   {$IFDEF BCDTOSTR_WITH_FORMATSETTINGS}
   Result := '<field value="' + BCDToStr(BCD, ZXmlProxyFormatSettings) + '" />';
@@ -265,6 +266,7 @@ var
   MD: IZResultSetMetadata;
   Rows: TStringList;
 begin
+  CF := [];
   if RS.GetType <> rtForwardOnly then
     RS.MoveAbsolute(0);
   if not RS.IsAfterLast then begin
