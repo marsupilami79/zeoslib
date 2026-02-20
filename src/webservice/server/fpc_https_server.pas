@@ -182,7 +182,7 @@ type
 
 implementation
 uses
-  wst_consts,
+  ZStream, wst_consts,
   base_service_intf, server_service_intf, server_service_imputils, metadata_wsdl;
 
 {$IFDEF WST_DBG}
@@ -279,7 +279,10 @@ var
   rqst : IRequestBuffer;
   inStream : TStringStream;
   Cnt: String;
+  UseDeflate: Boolean;
+  TargetStream: TStream;
 begin
+  UseDeflate := Pos('deflate', ARequest.AcceptEncoding) > 0;
   trgt := ExtractNextPathElement(APath);
   if AnsiSameText(sWSDL,trgt) then
     begin
@@ -295,9 +298,17 @@ begin
       ctntyp := ARequest.ContentType;
       AResponse.ContentType := ctntyp;
       frmt := Trim(ARequest.QueryFields.Values['format']);
-      rqst := TRequestBuffer.Create(trgt,ctntyp,inStream,AResponse.ContentStream,frmt);
+      if UseDeflate then
+        TargetStream := Tcompressionstream.create(cldefault, AResponse.ContentStream, true)
+      else
+        TargetStream := AResponse.ContentStream;
+      rqst := TRequestBuffer.Create(trgt,ctntyp,inStream,TargetStream,frmt);
       rqst.GetPropertyManager().SetProperty(sREMOTE_IP,ARequest.RemoteAddress);
       HandleServiceRequest(rqst);
+      if UseDeflate then begin
+        FreeAndNil(TargetStream);
+        AResponse.ContentEncoding := 'deflate';
+      end;
       AResponse.ContentLength:=AResponse.ContentStream.Size;
     finally
       inStream.Free();
@@ -333,7 +344,7 @@ var
 {$ENDIF}
   locPath, locPathPart : string;
 begin
-  AResponse.Server:=FServerSoftware;
+  AResponse.Server := FServerSoftware;
   locPath := ARequest.URL;
   locPathPart := ExtractNextPathElement(locPath);
   if Assigned(FOnCustomRequest) and not FOnCustomRequest(ARequest, AResponse, locPath) then

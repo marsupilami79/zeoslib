@@ -339,6 +339,10 @@ begin
     FConnectionIdleTimeout := IniFile.ReadInteger('general', 'Connection Idle Timeout', 86400); {Default to one day}
     FEnableThreading := IniFile.ReadBool('general', 'Enable Threading', false);
     FLogFile := IniFile.ReadString('general', 'Log File', FLogFile);
+    if (Length(FDbPrefix) > 0) and (FDbPrefix[Length(FDbPrefix)] <> '.') then
+      FDbPrefix := FDbPrefix + '.';
+    if (Length(FSecurityPrefix) > 0) and (FSecurityPrefix[Length(FSecurityPrefix)] <> '.') then
+      FSecurityPrefix := FSecurityPrefix + '.';
   finally
     FreeAndNil(IniFile);
   end;
@@ -391,7 +395,7 @@ begin
 
         Section := FIniFile.ReadString(Section, 'Security Module', '');
         if Section <> '' then begin
-          Section := SecurityPrefix + '.' + Section;
+          Section := SecurityPrefix + Section;
           ModuleType := FIniFile.ReadString(Section, 'Type', '');
           Logger.Debug(Format('Creating submodule %s of type %s', [Section, ModuleType]));
           ConfigInfo.SecurityModule := GetSecurityModule(ModuleType);
@@ -418,7 +422,7 @@ function TDbcProxyIniConfigManager.GetSecurityConfig(const Name: String): IZDbcP
 var
   CfgName: String;
 begin
-  CfgName := FSecurityPrefix + '.' + Name;
+  CfgName := FSecurityPrefix + Name;
   if not FIniFile.SectionExists(CfgName) then raise
     EZSQLException.Create(Format('Could not find section %s', [CfgName]));
   Result := TDbcProxyIniKeyValueProvider.Create(self, FIniFile, CfgName) as IZDbcProxyKeyValueStore;
@@ -428,7 +432,7 @@ function TDbcProxyIniConfigManager.GetDatbaseConfig(const Name: String): IZDbcPr
 var
   CfgName: String;
 begin
-  CfgName := FDbPrefix + '.' + Name;
+  CfgName := FDbPrefix + Name;
   if not FIniFile.SectionExists(CfgName) then raise
     EZSQLException.Create(Format('Could not find section %s', [CfgName]));
   Result := TDbcProxyIniKeyValueProvider.Create(self, FIniFile, CfgName) as IZDbcProxyKeyValueStore;

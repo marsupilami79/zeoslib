@@ -59,7 +59,7 @@ interface
 
 uses SysUtils, Classes, {$IFDEF MSEgui}mclasses,{$ENDIF}
   ZCompatibility, ZPlainDriver,
-  {$IFDEF ENABLE_INTERNAL_PROXY}ZPlainProxyDriverInternalProxy, {$ENDIF}
+  {$IFDEF ENABLE_INTERNAL_PROXY}{$IFNDEF FPC}ZPlainProxyDriverInternalProxy,{$ELSE}ZPlainProxyDriverInternalProxyFpc,{$ENDIF}{$ENDIF}
   ZPlainProxyDriverIntf;
 
 {$IFNDEF ENABLE_INTERNAL_PROXY}
@@ -172,7 +172,11 @@ begin
   {$IFNDEF ENABLE_INTERNAL_PROXY}
   Result := FGetInterface();
   {$ELSE}
-  Result := ZPlainProxyDriverInternalProxy.GetInterface;
+    {$IFNDEF FPC}
+    Result := ZPlainProxyDriverInternalProxy.GetInterface;
+    {$ELSE}
+    Result := ZPlainProxyDriverInternalProxyFpc.GetInterface;
+    {$ENDIF}
   {$ENDIF ZEOS_PROXY_USE_INTERNAL_PROXY}
 end;
 
@@ -181,7 +185,11 @@ begin
   {$IFNDEF ENABLE_INTERNAL_PROXY}
   Result := FGetLastErrorStr();
   {$ELSE}
-  Result := ZPlainProxyDriverInternalProxy.GetLastErrorStr;
+    {$IFNDEF FPC}
+    Result := ZPlainProxyDriverInternalProxy.GetLastErrorStr;
+    {$ELSE}
+    Result := ZPlainProxyDriverInternalProxyFpc.GetLastErrorStr;
+    {$ENDIF}
   {$ENDIF ZEOS_PROXY_USE_INTERNAL_PROXY}
 end;
 

@@ -37,7 +37,7 @@ Easy Display: Format('%.6d', [CalculateOTP(SECRET)]);
 *)
 
 function CalculateOTP(const Secret: String; const Counter: Integer = -1): Integer;
-function ValidateTOPT(const Secret: String; const Token: Integer; const WindowSize: Integer = 4): Boolean;
+function ValidateTOPT(const Secret: String; const Token: Integer; const WindowSize: Integer = 4; TS: TDateTime = 0): Boolean;
 function GenerateOTPSecret(len: Integer = -1): String;
 
 implementation
@@ -152,14 +152,17 @@ begin
   Result := Key mod Trunc(IntPower(10, otpLength));
 end;
 
-function ValidateTOPT(const Secret: String; const Token: Integer; const WindowSize: Integer = 4): Boolean;
+function ValidateTOPT(const Secret: String; const Token: Integer; const WindowSize: Integer = 4; TS: TDateTime = 0): Boolean;
 var
   TimeStamp: Integer;
   TestValue: Integer;
 begin
   Result := false;
 
-  TimeStamp := DateTimeToUnix(Now, False) div keyRegeneration;
+  if TS = 0 then
+    TS := Now;
+
+  TimeStamp := DateTimeToUnix(TS, False) div keyRegeneration;
   for TestValue := Timestamp - WindowSize to TimeStamp + WindowSize do
   begin
     if (CalculateOTP(Secret, TestValue) = Token) then

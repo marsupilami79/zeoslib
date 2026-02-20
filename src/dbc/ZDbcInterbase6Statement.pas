@@ -218,7 +218,7 @@ begin
 
       if FPlainDriver.isc_dsql_sql_info(@FStatusVector, @FStmtHandle, 1,
           @ReqInfo, SizeOf(TByteBuffer), PAnsiChar(FByteBuffer)) <> 0 then
-        FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_sql_info'{$ELSE}''{$ENDIF}, Self);
+        FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_sql_info'{$ELSE}ASQL{$ENDIF}, Self);
       if FByteBuffer[0] <> isc_info_sql_records then
         Exit;
 

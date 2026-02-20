@@ -1601,7 +1601,10 @@ begin
   if (Fapi_version < SQLANY_API_VERSION_4)
   then FIteration := 0
   else begin
-    FIteration := FZBufferSize div RowSize;
+    if RowSize = 0 then
+      FIteration := 0
+    else
+      FIteration := FZBufferSize div RowSize;
     if (FIteration = 0) or (Fdata_info <> nil) then
       FIteration := 1
   end;

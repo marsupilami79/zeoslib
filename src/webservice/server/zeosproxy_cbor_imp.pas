@@ -23,7 +23,7 @@ var
 
 implementation
 
-uses zeosproxy_imp, dom, XMLRead, ZDbcIntfs, DbcProxyUtils, ZCbor, ZDbcXmlUtils, FmtBCD, ZExceptions;
+uses zeosproxy_imp, dom, XMLRead, ZDbcIntfs, DbcProxyUtils, ZCbor, ZDbcXmlUtils, FmtBCD, ZExceptions, ZStream;
 
 const
   ZCborChangedRows = 1;
@@ -70,7 +70,10 @@ var
   ResultSet: IZResultSet;
   SQL, Query: String;
   Res: TMemoryStream;
+  UseDeflate: Boolean;
+  TargetStream: TStream;
 begin
+  UseDeflate := false; //Pos('deflate', ARequest.AcceptEncoding) > 0;
   ParamsNode := nil;
   SQLNode := nil;
   try
@@ -104,16 +107,27 @@ begin
       AResponse.ContentType := 'application/cbor';
       Res := TMemoryStream.Create;
       try
+        if UseDeflate then
+          TargetStream := Tcompressionstream.create(cldefault, Res, true)
+        else
+          TargetStream := Res;
         if Statement.ExecutePrepared then begin
           ResultSet := Statement.GetResultSet;
           if Assigned(ResultSet) then begin
-            encodeResultSet(ResultSet, Res);
+            encodeResultSet(ResultSet, TargetStream);
           end else begin
-            encodeChangedRows(Statement.GetUpdateCount, Res);
+            encodeChangedRows(Statement.GetUpdateCount, TargetStream);
           end;
         end else
-          encodeChangedRows(Statement.GetUpdateCount, Res);
+          encodeChangedRows(Statement.GetUpdateCount, TargetStream);
+
+        if UseDeflate then begin
+          FreeAndNil(TargetStream);
+          AResponse.ContentEncoding := 'deflate';
+        end;
       except
+        if UseDeflate then
+          FreeAndNil(TargetStream);
         FreeAndNil(Res);
         raise;
       end;
@@ -201,6 +215,7 @@ var
   ColInfo: TCborArr;
   MD: IZResultSetMetadata;
   x: Integer;
+  Precision: Integer;
 begin
   EncList := TCborArr.Create;
   try
@@ -213,7 +228,11 @@ begin
       ColInfo.Add(TCborUtf8String.Create(MD.GetColumnName(x)));
       ColInfo.Add(TCborUINTItem.Create(Ord(MD.GetColumnType(x))));
       ColInfo.Add(TCborUtf8String.Create(MD.GetDefaultValue(x)));
-      ColInfo.Add(TCborUINTItem.Create(MD.GetPrecision(x)));
+      Precision := MD.GetPrecision(x);
+      if Precision >= 0 then
+        ColInfo.Add(TCborUINTItem.Create(Precision))
+      else
+        ColInfo.Add(TCborNegIntItem.Create(Precision));
       ColInfo.Add(TCborUINTItem.Create(MD.GetScale(x)));
       ColInfo.Add(TCborUtf8String.Create(MD.GetSchemaName(x)));
       ColInfo.Add(TCborUtf8String.Create(MD.GetTableName(x)));

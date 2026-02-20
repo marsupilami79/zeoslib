@@ -1541,13 +1541,20 @@ var
   Negative, LastByteIsHalfByte: boolean;
 label finalize;
 begin
+  P := 0;
+  i64 := 0;
+  if Value.Precision = 0 then begin
+    negative := false;
+    i64 := 0;
+    BCDScale := 0;
+    Scale := 0;
+    goto finalize;
+  end;
   LastNibbleByteIDX := (Value.Precision-1) shr 1;
   F := Value.SignSpecialPlaces;
   BCDScale := (F and 63);
   Negative := (F and $80) = $80;
   LastByteIsHalfByte := (Value.Precision and 1 = 1);// or ((BCDScale and 1 = 1) and (Value.Fraction[LastNibbleByteIDX] and $0F = 0));
-  P := 0;
-  i64 := 0;
   { scan for leading zeroes to skip them }
   for I := 0 to LastNibbleByteIDX do begin
     F := Value.Fraction[i];

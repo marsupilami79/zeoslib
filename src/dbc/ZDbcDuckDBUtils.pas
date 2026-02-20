@@ -1,6 +1,6 @@
 unit ZDbcDuckDBUtils;
 
-{$I zdbc.inc}
+{$I ZDbc.inc}
 
 interface
 

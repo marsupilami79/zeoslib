@@ -58,7 +58,12 @@ interface
 {$IFDEF ENABLE_PROXY}
 
 uses
-  Classes {$IFNDEF NO_SAFECALL}, ActiveX{$ENDIF};
+  Classes
+  {$IFNDEF FPC}
+    {$IFNDEF NO_SAFECALL}, ActiveX{$ENDIF}
+  {$ELSE}
+    {$IFDEF WINDOWS}, ActiveX{$ELSE}, Types{$ENDIF}
+  {$ENDIF};
 
   type
   {$IFDEF NO_WIDESTRING}

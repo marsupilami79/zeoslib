@@ -56,7 +56,7 @@ interface
 {$I ZPlain.inc}
 
 uses
-  {$ifdef FPC}ctypes,{$ENDIF} SysUtils, Classes, {$IFDEF MSEgui}mclasses,{$ENDIF}
+  {$ifdef FPC}ctypes, {$IFDEF UNIX}unixtype,{$ENDIF}{$ENDIF} SysUtils, Classes, {$IFDEF MSEgui}mclasses,{$ENDIF}
   ZCompatibility, ZPlainDriver;
 
 {$IFNDEF ZEOS_DISABLE_DUCKDB}

@@ -448,9 +448,12 @@ end;
     <code>false</code> if there are no more rows
 }
 function TZInterbase6XSQLDAResultSet.Next: Boolean;
-var Status: ISC_STATUS;
+var
+  Status: ISC_STATUS;
+  ErrorPos: SQLString;
 label CheckE;
 begin
+  ErrorPos := 'isc_dsql_fetch';
   { Checks for maximum row. }
   Result := False;
   if Closed or (RowNo > LastRowNo ) or ((MaxRows > 0) and (LastRowNo >= MaxRows) or (FStmtHandleAddr^ = 0)) then
@@ -469,6 +472,7 @@ begin
     end else if Status = 100  then begin
       {no error occoured -> notify IsAfterLast and close the recordset}
       RowNo := RowNo + 1;
+      ErrorPos := 'isc_dsql_free_statement';
       if FPlainDriver.isc_dsql_free_statement(@FStatusVector, @FStmtHandle, DSQL_CLOSE) <> 0 then
         goto CheckE;
       FStmtHandle := 0;
@@ -477,7 +481,7 @@ begin
       if not LastRowFetchLogged and DriverManager.HasLoggingListener then
         DriverManager.LogMessage(lcFetchDone, IZLoggingObject(FWeakIZLoggingObjectPtr));
     end else
-CheckE: FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, 'isc_dsql_free_statement', Self);
+CheckE: FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, ErrorPos, Self);
   end else if RowNo = 0 then begin
     Result := True;
     RowNo := 1;
