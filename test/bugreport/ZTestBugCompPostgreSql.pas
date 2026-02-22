@@ -1726,7 +1726,7 @@ begin
     Query.Append;
     Query.FieldByName('id').AsInteger := 2026021302;
     uuidstr := '{783DAE87-E33E-4314-8730-398ED525F07B}';
-    uuid := StrToGUID(PWideChar(uuidstr));
+    uuid := StringToGUID(uuidstr);
     (Query.FieldByName('guid') as TGuidField).AsGuid  := uuid;
     Query.FieldByName('guid').AsString := uuidstr;
     Query.Post;
