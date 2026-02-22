@@ -781,6 +781,7 @@ begin
      decoded := Base64URLDecode(data);
      Result := nil;
 
+     (* // This should be debug code, right?
      with TStringStream.Create('') do
      try
         for i := 1 to Length(decoded) do
@@ -789,7 +790,7 @@ begin
         SaveToFile('d:\cbor_attestObj.txt');
      finally
             Free;
-     end;
+     end;*)
 
      if decoded <> '' then
         Result := DecodeData( PByte(PAnsiChar(decoded)), Length(decoded));
