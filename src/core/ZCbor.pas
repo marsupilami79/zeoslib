@@ -501,9 +501,9 @@ begin
         exit('');
 
      // fixup
-     sfixup := UTF8String(s) + StringOfChar( '=', (4 - Length(s) mod 4) mod 4 );
-     sFixup := stringReplace(sfixup, '-', '+', [rfReplaceAll]);
-     sFixup := StringReplace(sfixup, '_', '/', [rfReplaceAll]);
+     sfixup := UTF8String(s) + UTF8String(StringOfChar( '=', (4 - Length(s) mod 4) mod 4 ));
+     sFixup := UTF8String(stringReplace(String(sfixup), '-', '+', [rfReplaceAll]));
+     sFixup := UTF8String(StringReplace(String(sfixup), '_', '/', [rfReplaceAll]));
 
      {$IF NOT DECLARED(ZDecodeBase64)}
      sConvStr := sFixup;
@@ -528,7 +528,7 @@ begin
      end;
      aWrapStream.Free;
      {$IFEND}
-     Data := ZDecodeBase64(sFixup);
+     Data := ZDecodeBase64(AnsiString(sFixup));
      SetLength(Result, Length(Data));
      Move(Data[0], Result[1], Length(Data));
 end;
@@ -641,7 +641,7 @@ begin
           // Common normalized number
           Exp := Exp + (127 - 15);
           Mantissa := Mantissa shl 13;
-          Dst := (Sign shl 31) or (Integer(Exp) shl 23) or Mantissa;
+          Dst := (Sign shl 31) or (Cardinal(Exp) shl 23) or Mantissa;
           // Result := Power(-1, Sign) * Power(2, Exp - 15) * (1 + Mantissa / 1024);
      end
      else if (Exp = 0) and (Mantissa = 0) then
@@ -781,6 +781,7 @@ begin
      decoded := Base64URLDecode(data);
      Result := nil;
 
+     (* // This should be debug code, right?
      with TStringStream.Create('') do
      try
         for i := 1 to Length(decoded) do
@@ -789,7 +790,7 @@ begin
         SaveToFile('d:\cbor_attestObj.txt');
      finally
             Free;
-     end;
+     end;*)
 
      if decoded <> '' then
         Result := DecodeData( PByte(PAnsiChar(decoded)), Length(decoded));

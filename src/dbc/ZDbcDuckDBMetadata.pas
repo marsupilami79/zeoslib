@@ -64,6 +64,8 @@ type
 
   {** Implements DBC Layer DuckDB driver Database Information. }
   TZDuckDBDatabaseInfo = class(TZAbstractDatabaseInfo)
+  private
+    FServerVersion: String;
   public
     // database/driver/server info:
     function GetDatabaseProductName: string; override;
@@ -293,7 +295,16 @@ end;
 }
 function TZDuckDBDatabaseInfo.GetDatabaseProductVersion: string;
 begin
-  Result := '';
+  if FServerVersion = '' then begin
+    with Metadata.GetConnection.CreateStatement.ExecuteQuery('select version()') do try
+      if Next
+      then FServerVersion := GetString(FirstDBCIndex)
+      else FServerVersion := 'unknown';
+    finally
+      Close;
+    end;
+  end;
+  Result := FServerVersion;
 end;
 
 {**
@@ -334,8 +345,7 @@ end;
 }
 function TZDuckDBDatabaseInfo.GetServerVersion: string;
 begin
-  // todo: Verrsion aus DLL auslesen
-  Result := '1.x.x';
+  Result := GetDatabaseProductVersion;
 end;
 
 function TZDuckDBDatabaseInfo.NullsAreSortedHigh: Boolean;

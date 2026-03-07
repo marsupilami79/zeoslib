@@ -2535,10 +2535,12 @@ begin
     P := PByte(@Value);
     D1 := PG2Cardinal(P);
     PCardinal(P)^ := D1;
-    D2 := PWord(P + 4)^;
-    PWord(P + 4)^ := (D2 and $00FF shl 8) or (D2 and $FF00 shr 8);
-    D3 := PWord(P + 6)^;
-    PWord(P + 6)^ := (D3 and $00FF shl 8) or (D3 and $FF00 shr 8);
+    Inc(P, 4);
+    D2 := PWord(P)^;
+    PWord(P)^ := (D2 and $00FF shl 8) or (D2 and $FF00 shr 8);
+    Inc(P, 2);
+    D3 := PWord(P)^;
+    PWord(P)^ := (D3 and $00FF shl 8) or (D3 and $FF00 shr 8);
     {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
     {$IFDEF OverFlowCheckEnabled} {$Q+} {$ENDIF}
   {$ENDIF ENDIAN_BIG}

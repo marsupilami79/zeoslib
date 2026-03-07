@@ -131,7 +131,7 @@ type
   PLongBool = ^LongBool;
   {$IFEND}
 
-  UInt                  = LongWord;
+  UInt                  = Cardinal; // See Bugreport #648 for the exact reason
   PUInt                 = ^UInt;
   ZPPWideChar           = ^PWideChar;//BCB issue: PPWideChar is not part of system
 
@@ -476,7 +476,7 @@ function CharInSet(const C: Word; const CharSet: TSysCharSet): Boolean; overload
 function UTF8ToString(const s: RawByteString): UnicodeString;
 {$IFEND}
 
-function Hash(const S : RawByteString) : LongWord; overload;
+function Hash(const S : RawByteString) : Cardinal; overload;
 function Hash(const Key : UnicodeString) : Cardinal; overload;
 
 {$IFNDEF NO_ANSISTRING}
@@ -572,7 +572,7 @@ end; { Hash }
 //use PAnsiChar instead of S[] to inc the 4Byte blocks -> faster!
 //note: we can also use 64Bit versions: http://factgrabber.com/index.php?q=MurmurHash&lcid=xrnmicaJ5olmGUbBZJlkwWah5plkiYaJJpkGgSexJhkm
 //function MurmurHash2(const S: RawByteString; const Seed: LongWord=$9747b28c): LongWord;
-function Hash(const S: RawByteString): LongWord;
+function Hash(const S: RawByteString): Cardinal;
 var
   k: LongWord;
   Len: LongWord;
@@ -597,7 +597,7 @@ begin
     PEnd := P + Len - 4;
     while P < PEnd do
     begin
-      k := PLongWord(P)^;
+      k := PCardinal(P)^;
 
       k := k * m;
       k := k xor (k shr r);
@@ -615,12 +615,12 @@ begin
             P: ... $69 $18 $2f
     }
     if len = 3 then
-      Result := Result xor (LongWord((P+2)^) shl 16);
+      Result := Result xor (Cardinal((P+2)^) shl 16);
     if len >= 2 then
-      Result := Result xor (LongWord((P+1)^) shl 8);
+      Result := Result xor (Cardinal((P+1)^) shl 8);
     if len >= 1 then
     begin
-      Result := Result xor (LongWord(P^));
+      Result := Result xor (Cardinal(P^));
       Result := Result * m;
     end;
 

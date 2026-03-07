@@ -1726,14 +1726,15 @@ begin
     Query.Append;
     Query.FieldByName('id').AsInteger := 2026021302;
     uuidstr := '{783DAE87-E33E-4314-8730-398ED525F07B}';
-    uuid := StrToGUID(PWideChar(uuidstr));
-    Query.FieldByName('guid').AsGuid := uuid;
+    uuid := StringToGUID(uuidstr);
+    (Query.FieldByName('guid') as TGuidField).AsGuid  := uuid;
+    Query.FieldByName('guid').AsString := uuidstr;
     Query.Post;
     Query.Close;
     Query.SQL.Text := 'select * from guid_test where id = 2026021302';
     Query.Open;
     CheckEquals(2026021302, Query.FieldByName('ID').AsInteger);
-    CheckEquals(uuid, Query.FieldByName('guid').AsGuid);
+    CheckEquals(uuid, (Query.FieldByName('guid') as TGuidField).AsGuid);
     Query.Close;
   finally
     FreeAndNil(Query);
