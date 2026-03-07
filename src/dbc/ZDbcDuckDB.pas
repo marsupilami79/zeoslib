@@ -96,6 +96,7 @@ type
     FDatabase: TDuckDB_Database;
     FConnection: TDuckDB_Connection;
     FSchema: string;
+    FHostVersion: Integer;
   protected
     procedure CheckDuckDBError(Res: TDuckDB_State; AMessage: String); overload;
     procedure CheckDuckDbError(AResult: PDuckDB_Result); overload;
@@ -353,7 +354,7 @@ var
   ErrorMsg: UTF8String;
 begin
   ErrorMsg := FPlainDriver.DuckDB_Result_Error(AResult);
-  raise EZSQLException.Create({$IFDEF UNICODE}UTF8Decode(ErrorMsg){$ELSE}ErrorMsg{$ENDIF});
+  raise EZSQLException.Create({$IFDEF UNICODE}UTF8ToString(ErrorMsg){$ELSE}ErrorMsg{$ENDIF});
 end;
 
 {**
@@ -365,6 +366,7 @@ begin
   if GInstanceCache = nil then
     GInstanceCache := FPlainDriver.duckdb_create_instance_cache;
   FMetadata := TZDuckDBDatabaseMetadata.Create(Self, Url);
+  FHostVersion := -1;
   inherited AfterConstruction;
 end;
 
@@ -384,7 +386,7 @@ begin
   LogMessage := 'CONNECT TO "'+ URL.Database + '" AS USER "' + URL.UserName + '"';
   DatabasePath := {$IFDEF UNICODE}UTF8Encode(URL.Database){$ELSE}URL.Database{$ENDIF};
   Res := FPlainDriver.duckdb_get_or_create_from_cache(GInstanceCache, PAnsiChar(DatabasePath), @FDatabase, nil, @ErrorMessage);
-  CheckDuckDBError(Res, ErrorMessage);
+  CheckDuckDBError(Res, {$IFDEF UNICODE}UTF8ToString({$ENDIF}ErrorMessage{$IFDEF UNICODE}){$ENDIF});
   Res := FPlainDriver.Duckdb_Connect(FDatabase, @FConnection);
   CheckDuckDBError(Res, Format('Could not connect to DuckDB Database %s.', [URL.Database]));
 
@@ -498,7 +500,7 @@ end;
 
 function TZDbcDuckDBConnection.GetClientVersion: Integer;
 begin
-  Result := 1000;
+  Result := GetHostVersion;
 end;
 
 {**
@@ -536,8 +538,45 @@ begin
 end;
 
 function TZDbcDuckDBConnection.GetHostVersion: Integer;
+var
+  VerString: String;
+  P, PDot, PEnd: PChar;
+  MajorVersion: Integer;
+  MiniorVersion: Integer;
+  SubVersion: Integer;
 begin
-  Result := 0;
+  // This code is borrowed from SQLServerProductToHostVersion
+  if not Closed and (FHostVersion = -1) then begin
+    VerString := GetMetadata.GetDatabaseInfo.GetDatabaseProductVersion;
+    MajorVersion := 0;
+    MiniorVersion := 0;
+    SubVersion := 0;
+    P := Pointer(VerString);
+    PEnd := p + Length(VerString);
+    // Skip any letters at beginning
+    while (P < PEnd) and ((Ord(P^) < Ord('0')) or (Ord(P^) > Ord('9'))) do
+      Inc(P);
+    PDot := P;
+    while (PDot < PEnd) and ((Ord(PDot^) >= Ord('0')) and (Ord(PDot^) <= Ord('9'))) do
+      Inc(PDot);
+    if PDot^ = '.' then begin
+      MajorVersion := {$IFDEF UNICODE}UnicodeToIntDef{$ELSE}RawToIntDef{$ENDIF}(P, PDot, 0);
+      P := PDot +1;
+      PDot := P +1;
+      while (PDot < PEnd) and ((Ord(PDot^) >= Ord('0')) and (Ord(PDot^) <= Ord('9'))) do
+        Inc(PDot);
+      if PDot^ = '.' then begin
+        MiniorVersion := {$IFDEF UNICODE}UnicodeToIntDef{$ELSE}RawToIntDef{$ENDIF}(P, PDot, 0);
+        P := PDot +1;
+        PDot := P +1;
+        while (PDot < PEnd) and ((Ord(PDot^) >= Ord('0')) and (Ord(PDot^) <= Ord('9'))) do
+          Inc(PDot);
+        SubVersion := {$IFDEF UNICODE}UnicodeToIntDef{$ELSE}RawToIntDef{$ENDIF}(P, PDot, 0);
+      end;
+    end;
+    FHostVersion := EncodeSQLVersioning(Majorversion, MiniorVersion, SubVersion);
+  end;
+  Result := FHostVersion;
 end;
 
 function TZDbcDuckDBConnection.GetServerProvider: TZServerProvider;

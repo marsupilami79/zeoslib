@@ -161,7 +161,7 @@ var
   ErrorMsg: UTF8String;
 begin
   ErrorMsg := FPlainDriver.DuckDB_Prepare_Error(AStatement);
-  raise EZSQLException.Create({$IFDEF UNICODE}UTF8Decode(ErrorMsg){$ELSE}ErrorMsg{$ENDIF});
+  raise EZSQLException.Create({$IFDEF UNICODE}UTF8ToString(ErrorMsg){$ELSE}ErrorMsg{$ENDIF});
 end;
 
 constructor TZDbcDuckDBPreparedStatement.Create(const Connection: IZConnection; const SQL: string; Info: TStrings);

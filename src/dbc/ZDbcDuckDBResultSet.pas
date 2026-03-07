@@ -391,8 +391,8 @@ begin
     ColumnInfo := TZColumnInfo.Create;
     with ColumnInfo do begin
       ColumnType := DuckTypeToZSqlType(FPlainDriver.DuckDB_Column_Type(@FResult, I));
-      ColumnLabel := FPlainDriver.DuckDB_Column_Name(@FResult, I);
-
+      ColumnLabel := {$IFDEF UNICODE}UTF8ToString({$ENDIF}FPlainDriver.DuckDB_Column_Name(@FResult, I){$IFDEF UNICODE}){$ENDIF};
+      ColumnCodePage := zCP_UTF8;
 
 //      Precision := StrToInt(ColumnNode.Attributes['precision']);
 //      {$IFDEF UNICODE}
@@ -464,8 +464,6 @@ begin
 end;
 
 function TZDbcDuckDBResultSet.GetPAnsiChar(ColumnIndex: Integer; out Len: NativeUInt): PAnsiChar;
-var
-  TempStr: TDuckDB_String;
 begin
   LastWasNull := IsNull(ColumnIndex);
 
@@ -487,7 +485,7 @@ begin
 
   if not LastWasNull then begin
     GetUTF8String(ColumnIndex);
-    FWideBuffer := UTF8Decode(FStringBuffer);
+    FWideBuffer :=  {$IFDEF UNICODE}UTF8ToString({$ENDIF}FStringBuffer{$IFDEF UNICODE}){$ENDIF};
     Len := Length(FWideBuffer);
     if Len = 0
     then Result := PEmptyUnicodeString
@@ -506,7 +504,7 @@ begin
     exit;
   end;
 
-  Result := GetUTF8String(ColumnIndex);
+  Result := String(GetUTF8String(ColumnIndex));
 end;
 
 {$IFNDEF NO_ANSISTRING}
@@ -517,8 +515,7 @@ begin
     Result := '';
     exit;
   end;
-
-  Result := GetUTF8String(ColumnIndex);
+  Result := AnsiString(GetUTF8String(ColumnIndex));
 end;
 {$ENDIF}
 
@@ -572,7 +569,7 @@ begin
     exit;
   end;
 
-  Result := UTF8Decode(GetUTF8String(ColumnIndex));
+  Result := {$IFDEF UNICODE}UTF8ToString({$ENDIF}GetUTF8String(ColumnIndex){$IFDEF UNICODE}){$ENDIF};
 end;
 
 {**
@@ -585,8 +582,6 @@ end;
     value returned is <code>false</code>
 }
 function TZDbcDuckDBResultSet.GetBoolean(ColumnIndex: Integer): Boolean;
-var
-  Str: String;
 begin
 {$IFNDEF DISABLE_CHECKING}
   CheckColumnConvertion(ColumnIndex, stBoolean);
