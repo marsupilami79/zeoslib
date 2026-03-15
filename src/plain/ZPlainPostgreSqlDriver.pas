@@ -795,6 +795,17 @@ type
     lo_truncate64   : function(conn: TPGconn; fd: Integer; len: Int64): Integer; cdecl;
   end;
 
+  TZQuestDBPlainDriver = class(TZPostgreSQLPlainDriver, IZPlainDriver, IZPostgreSQLPlainDriver)
+  protected
+    procedure LoadCodePages; override;
+    function GetUnicodeCodePageName: String;
+  public
+    function Clone: IZPlainDriver; override;
+  public
+    function GetProtocol: string; override;
+    function GetDescription: string; override;
+  end;
+
 {$ENDIF ZEOS_DISABLE_POSTGRESQL}
 
 implementation
@@ -1019,6 +1030,34 @@ begin
   {$ENDIF}
   LoadCodePages;
 end;
+
+{ TZQuestDBPlainDriver }
+
+function TZQuestDBPlainDriver.GetDescription: string;
+begin
+  Result := 'Native Plain Driver for QuestDB using libpq';
+end;
+
+function TZQuestDBPlainDriver.GetProtocol: string;
+begin
+  Result := 'questdb-libpq';
+end;
+
+function TZQuestDBPlainDriver.GetUnicodeCodePageName: String;
+begin
+  Result := 'UTF8';
+end;
+
+procedure TZQuestDBPlainDriver.LoadCodePages;
+begin
+  AddCodePage('UNICODE', Ord(csUNICODE_PODBC), ceUTF8, zCP_UTF8, '', 4); {UNICODE 	Unicode (UTF-8)}
+end;
+
+function TZQuestDBPlainDriver.Clone: IZPlainDriver;
+begin
+  Result := TZQuestDBPlainDriver.Create;
+end;
+
 
 {$ENDIF ZEOS_DISABLE_POSTGRESQL}
 
