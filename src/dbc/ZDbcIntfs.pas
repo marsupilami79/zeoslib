@@ -357,7 +357,7 @@ type
   /// <summary>Defines the server type.</summary>
   TZServerProvider = (spUnknown, spMSSQL, spMSJet, spOracle, spASE, spASA,
     spPostgreSQL, spIB_FB, spMySQL, spNexusDB, spSQLite, spDB2, spAS400,
-    spInformix, spCUBRID, spFoxPro, spDuckDB);
+    spInformix, spCUBRID, spFoxPro, spDuckDB, spQuestDB);
 
   /// <summary>Defines a LOB stream mode.</summary>
   TZLobStreamMode = (lsmRead, lsmWrite, lsmReadWrite);

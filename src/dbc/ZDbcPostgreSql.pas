@@ -485,9 +485,45 @@ type
     property ProcessID: Integer read FProcessID;
   end;
 
+  {** Implements QuestDB Database Driver. }
+  TZQuestDBDriver = class(TZAbstractDriver)
+  public
+    /// <summary>Constructs this object with default properties.</summary>
+    constructor Create; override;
+    /// <summary>Attempts to create a database connection to the given URL.
+    ///  The driver should return "null" if it realizes it is the wrong kind
+    ///  of driver to connect to the given URL. This will be common, as when
+    ///  the zeos driver manager is asked to connect to a given URL it passes
+    ///  the URL to each loaded driver in turn.
+    ///  The driver should raise a EZSQLException if it is the right
+    ///  driver to connect to the given URL, but has trouble loading the
+    ///  library.</summary>
+    /// <param>"url" the TZURL Object used to find the Driver, it's library and
+    ///  assigns the connection properties.</param>
+    /// <returns>a <c>IZConnection</c> interface that represents a
+    ///  connection to the URL</returns>
+    function Connect(const Url: TZURL): IZConnection; override;
+    /// <summary>Gets the driver's minor version number. Initially this should
+    ///  be 0.</summary>
+    /// <returns>this driver's minor version number.</returns>
+    function GetMinorVersion: Integer; override;
+    /// <summary>Creates a generic tokenizer interface.</summary>
+    /// <returns>a created generic tokenizer object.</returns>
+    function GetTokenizer: IZTokenizer; override;
+    /// <summary>Creates a generic statement analyser object.</summary>
+    /// <returns>a created generic tokenizer object as interface.</returns>
+    function GetStatementAnalyser: IZStatementAnalyser; override;
+  end;
+
+  TZQuestDBConnection = class(TZPostgreSQLConnection)
+  public
+    function GetServerProvider: TZServerProvider; override;
+  end;
+
 var
   {** The common driver manager object. }
   PostgreSQLDriver: IZDriver;
+  QuestDBDriver: IZDriver;
 
 {$ENDIF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
 implementation
@@ -750,7 +786,10 @@ begin
   FDomain2BaseTypMap := TZOID2OIDMapList.Create;
   { Sets a default PostgreSQL port }
   if Self.Port = 0 then
-     Self.Port := 5432;
+    if GetServerProvider = spQuestDB then
+      Self.Port := 8812
+    else
+      Self.Port := 5432;
   inherited SetTransactionIsolation(tiReadCommitted);
 
   { Processes connection properties. }
@@ -1058,8 +1097,14 @@ begin
     {$IFDEF USE_SYNCOMMONS}
     SetServerSetting('DateStyle', 'ISO');
     {$ENDIF}
-    Finteger_datetimes := StrToBoolEx(GetServerSetting(#39+ConnProps_integer_datetimes+#39));
-    FIs_bytea_output_hex := UpperCase(GetServerSetting('''bytea_output''')) = 'HEX';
+    if GetServerProvider = spQuestDB then begin
+      // see: https://zeoslib.sourceforge.io/viewtopic.php?p=317778#p317778
+      Finteger_datetimes := True;
+      FIs_bytea_output_hex := False;
+    end else begin
+      Finteger_datetimes := StrToBoolEx(GetServerSetting(#39+ConnProps_integer_datetimes+#39));
+      FIs_bytea_output_hex := UpperCase(GetServerSetting('''bytea_output''')) = 'HEX';
+    end;
     UpdateTimestampOffset;
   finally
     if self.IsClosed and (Self.Fconn <> nil) then
@@ -1381,6 +1426,11 @@ var ANow: TDateTime;
 begin
   if Closed then
     Exit;
+  if GetServerProvider = spQuestDB then begin
+    // see: https://zeoslib.sourceforge.io/viewtopic.php?p=317778#p317778
+    FTimeZoneOffset := 0;
+    exit;
+  end;
   if not Assigned(FPlainDriver.PQexecParams) then begin
     FTimeZoneOffset := 0;
     Exit;
@@ -2049,12 +2099,54 @@ begin
     Result := Result +'; Payload: '+fPayload;
 end;
 
+{ TZQuestDBConnection }
+
+constructor TZQuestDBDriver.Create;
+begin
+  inherited Create;
+  AddSupportedProtocol(AddPlainDriverToCache(TZQuestDBPlainDriver.Create));
+end;
+
+function TZQuestDBDriver.Connect(const Url: TZURL): IZConnection;
+begin
+  Result := TZQuestDBConnection.Create(Url);
+end;
+
+function TZQuestDBDriver.GetMinorVersion: Integer;
+begin
+  Result := 1;
+end;
+
+function TZQuestDBDriver.GetTokenizer: IZTokenizer;
+begin
+  Result := TZPostgreSQLTokenizer.Create; { thread save! Allways return a new Tokenizer! }
+end;
+
+function TZQuestDBDriver.GetStatementAnalyser: IZStatementAnalyser;
+begin
+  Result := TZPostgreSQLStatementAnalyser.Create; { thread save! Allways return a new Analyser! }
+end;
+
+
+{TZQuestDBConnection}
+
+function TZQuestDBConnection.GetServerProvider: TZServerProvider;
+begin
+  Result := spQuestDB;
+end;
+
+
 initialization
   PostgreSQLDriver := TZPostgreSQLDriver.Create;
   DriverManager.RegisterDriver(PostgreSQLDriver);
+  QuestDBDriver := TZQuestDBDriver.Create;
+  DriverManager.RegisterDriver(QuestDBDriver);
 finalization
-  if DriverManager <> nil then
+  if DriverManager <> nil then begin
     DriverManager.DeregisterDriver(PostgreSQLDriver);
+    DriverManager.DeregisterDriver(QuestDBDriver);
+  end;
   PostgreSQLDriver := nil;
+  QuestDBDriver := nil;
 {$ENDIF ZEOS_DISABLE_POSTGRESQL} //if set we have an empty unit
 end.
