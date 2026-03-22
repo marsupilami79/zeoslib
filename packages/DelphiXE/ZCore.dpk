@@ -52,6 +52,7 @@ contains
   ZFunctionsDateTime in '..\..\src\core\ZFunctionsDateTime.pas',
   ZFunctionsMath in '..\..\src\core\ZFunctionsMath.pas',
   ZFunctionsOther in '..\..\src\core\ZFunctionsOther.pas',
-  ZFunctionsStrings in '..\..\src\core\ZFunctionsStrings.pas';
+  ZFunctionsStrings in '..\..\src\core\ZFunctionsStrings.pas',
+  ZCbor in '..\..\src\core\ZCbor.pas';
 
 end.

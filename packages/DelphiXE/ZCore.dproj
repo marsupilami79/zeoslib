@@ -75,6 +75,7 @@
 			<DCCReference Include="dbrtl.dcp"/>
 			<DCCReference Include="soaprtl.dcp"/>
 			<DCCReference Include="..\..\src\core\ZExceptions.pas"/>
+			<DCCReference Include="..\..\src\core\ZCbor.pas"/>
 			<DCCReference Include="..\..\src\core\ZVariant.pas"/>
 			<DCCReference Include="..\..\src\core\ZCollections.pas"/>
 			<DCCReference Include="..\..\src\core\ZCompatibility.pas"/>

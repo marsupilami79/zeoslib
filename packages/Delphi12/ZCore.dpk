@@ -56,6 +56,7 @@ contains
   ZTokenizer in '..\..\src\core\ZTokenizer.pas',
   ZVariables in '..\..\src\core\ZVariables.pas',
   ZVariant in '..\..\src\core\ZVariant.pas',
-  ZExceptions in '..\..\src\core\ZExceptions.pas';
+  ZExceptions in '..\..\src\core\ZExceptions.pas',
+  ZCbor in '..\..\src\core\ZCbor.pas';
 
 end.
