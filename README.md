@@ -17,6 +17,7 @@ The following datbases are supported:
   * ADO
   * ODBC Wide / ODBC ANSI
   * preliminary support for DuckDB
+  * preliminary support for QuestDB
   
 The following features are available - beyond the usual Connection, Query and Stored Procedure objects:
 
