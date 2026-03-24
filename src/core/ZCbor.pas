@@ -31,6 +31,8 @@ unit ZCbor;
 
 // simple value opcode `$f7 is not implemented -> it's undefined in the original RFC
 
+{$I ZCore.inc}
+
 interface
 
 {$IFDEF FPC}
