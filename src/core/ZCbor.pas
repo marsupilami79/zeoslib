@@ -33,11 +33,11 @@ unit ZCbor;
 
 {$I ZCore.inc}
 
-interface
-
 {$IFDEF FPC}
-{$MODE DELPHIUNICODE}
+{$MODESWITCH UNICODESTRINGS}
 {$ENDIF}
+
+interface
 
 uses SysUtils, Classes, Contnrs{$IFDEF FPC}{$IFDEF UNIX}, clocale{$ENDIF}{$ENDIF};
 
