@@ -31,11 +31,13 @@ unit ZCbor;
 
 // simple value opcode `$f7 is not implemented -> it's undefined in the original RFC
 
-interface
+{$I ZCore.inc}
 
 {$IFDEF FPC}
-{$MODE DELPHIUNICODE}
+{$MODESWITCH UNICODESTRINGS}
 {$ENDIF}
+
+interface
 
 uses SysUtils, Classes, Contnrs{$IFDEF FPC}{$IFDEF UNIX}, clocale{$ENDIF}{$ENDIF};
 
@@ -776,7 +778,7 @@ end;
 
 class function TCborDecoding.DecodeBase64Url(data: String): TCborItem;
 var decoded : RawByteString;
-  i: integer;
+  //i: integer;
 begin
      decoded := Base64URLDecode(data);
      Result := nil;

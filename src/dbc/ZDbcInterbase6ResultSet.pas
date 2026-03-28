@@ -61,7 +61,7 @@ uses
   Classes, {$IFDEF MSEgui}mclasses,{$ENDIF} SysUtils,
   {$IF defined (WITH_INLINE) and defined(MSWINDOWS) and not defined(WITH_UNICODEFROMLOCALECHARS)}Windows, {$IFEND}
   {$IFDEF WITH_UNITANSISTRINGS}AnsiStrings, {$ENDIF} //need for inlined FloatToRaw
-  ZDbcIntfs, ZDbcResultSet, ZDbcInterbase6,
+  ZDbcIntfs, ZDbcResultSet, ZDbcInterbase6, ZDbcInterbase6Statement,
   ZPlainFirebirdInterbaseDriver, ZCompatibility, ZDbcResultSetMetadata, ZMessages,
   ZPlainDriver, ZDbcInterbase6Utils, ZDbcUtils, ZClasses,
   ZDbcCache, ZDbcCachedResultSet, ZDbcFirebirdInterbase, ZExceptions;
@@ -251,7 +251,7 @@ begin
   FXSQLDA := XSQLDA.GetData; // localize buffer for fast access
   FIBConnection := Statement.GetConnection as IZInterbase6Connection;
   FPISC_DB_HANDLE := FIBConnection.GetDBHandle;
-  FISC_TR_HANDLE := FIBConnection.GetTrHandle^;
+  FISC_TR_HANDLE := (Statement as IZInterbase6Statement).GetTrHandle^; //FIBConnection.GetTrHandle^;
   FPlainDriver := FIBConnection.GetPlainDriver;
   FDialect := FIBConnection.GetDialect;
   FStmtType := StmtType; //required to know how to fetch the columns for ExecProc

@@ -273,7 +273,7 @@ type
     procedure SetTimestamp(Index: Integer; {$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} Value: TZTimeStamp); reintroduce; overload;
 
     procedure SetBytes(Index: Integer; Value: PByte; Len: NativeUInt); reintroduce; overload;
-    procedure SetGuid(Index: Integer; {$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} Value: TGUID);
+    procedure SetGUID(Index: Integer; {$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} Value: TGUID); override;
 
 
     procedure RegisterParameter(ParameterIndex: Integer; SQLType: TZSQLType;

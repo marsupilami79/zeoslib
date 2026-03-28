@@ -420,9 +420,11 @@ begin
   Result := nil;
   try
     SetResolverStatementParamters(FStatement, Temp);
-    if FTransaction <> nil
-    then Result := FTransaction.GetConnection.PrepareStatementWithParams(SQL, Temp)
-    else Result := Connection.PrepareStatementWithParams(SQL, Temp);
+    if FTransaction <> nil then begin
+      Result := FTransaction.GetConnection.PrepareStatementWithParams(SQL, Temp);
+      Result.SetTransaction(FTransaction);
+    end else
+      Result := Connection.PrepareStatementWithParams(SQL, Temp);
   finally
     Temp.Free;
   end;

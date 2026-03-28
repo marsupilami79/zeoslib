@@ -63,7 +63,7 @@ uses
   ZPlainFirebird, ZCompatibility, ZClasses,
   ZDbcResultSet, ZDbcInterbase6Utils,
   ZDbcFirebird, ZDbcCachedResultSet, ZDbcCache, ZDbcResultSetMetadata,
-  ZPlainFirebirdInterbaseDriver,
+  ZPlainFirebirdInterbaseDriver, ZDbcFirebirdStatement,
   ZDbcFirebirdInterbase, ZDbcLogging, ZDbcIntfs, ZExceptions;
 
 type
@@ -616,7 +616,7 @@ end;
 
 procedure TZAbstractFirebirdResultSet.RegisterCursor;
 begin
-  FFBTransaction := FFBConnection.GetActiveTransaction;
+  FFBTransaction := (GetStatement as IZFirebirdStatement).GetActiveTransaction;;
   FFBTransaction.RegisterOpencursor(IZResultSet(TransactionResultSet));
 end;
 

@@ -135,9 +135,11 @@ type
 implementation
 
 uses ZAbstractDataset, ZAbstractRODataset, ZSqlProcessor, ZMessages, ZExceptions;
+
 type
   TZProtectedAbstractRWTxnSeqDataSet = Class(TZAbstractRWTxnSeqDataSet);
   TZProtectedAbstractRODataset = Class(TZAbstractRODataset);
+
 { TZAbstractTransaction }
 
 procedure TZAbstractTransaction.BeforeDestruction;
@@ -239,9 +241,9 @@ var TxnManager: IZTransactionManager;
 begin
   TxnManager := GetTransactionManager;
   if (FTransaction = nil) or (not TxnManager.IsTransactionValid(FTransaction)) then
-    Result := TxnManager.CreateTransaction(FAutoCommit,
-      FReadOnly, FTransactIsolationLevel, FParams)
-  else Result := FTransaction;
+    FTransaction := TxnManager.CreateTransaction(FAutoCommit,
+      FReadOnly, FTransactIsolationLevel, FParams);
+  Result := FTransaction;
   with Connection.DbcConnection.GetMetadata.GetDatabaseInfo do begin
     FSupportsOpenCursorsAcrossRollback := SupportsOpenCursorsAcrossRollback;
     FSupportsOpenCursorsAcrossCommit := FSupportsOpenCursorsAcrossCommit;
