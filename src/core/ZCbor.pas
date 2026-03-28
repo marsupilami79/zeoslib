@@ -778,7 +778,7 @@ end;
 
 class function TCborDecoding.DecodeBase64Url(data: String): TCborItem;
 var decoded : RawByteString;
-  i: integer;
+  //i: integer;
 begin
      decoded := Base64URLDecode(data);
      Result := nil;

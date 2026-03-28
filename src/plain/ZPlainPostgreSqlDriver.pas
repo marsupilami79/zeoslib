@@ -798,7 +798,7 @@ type
   TZQuestDBPlainDriver = class(TZPostgreSQLPlainDriver, IZPlainDriver, IZPostgreSQLPlainDriver)
   protected
     procedure LoadCodePages; override;
-    function GetUnicodeCodePageName: String;
+    function GetUnicodeCodePageName: String; override;
   public
     function Clone: IZPlainDriver; override;
   public
