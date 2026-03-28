@@ -68,8 +68,13 @@ uses Classes, {$IFDEF MSEgui}mclasses,{$ENDIF} FmtBCD, SysUtils,
   ZDbcInterbase6Utils, ZExceptions;
 
 type
+  IZFirebirdStatement = Interface(IZStatement)
+    ['{1961CBD1-E60B-495E-A88C-5400726BDD3A}']
+    function GetActiveTransaction: IZFirebirdTransaction;
+  End;
+
   /// <summary>Implements an abstract Statement for Firebird.</summary>
-  TZAbstractFirebirdStatement = Class(TZAbstractFirebirdInterbasePreparedStatement)
+  TZAbstractFirebirdStatement = Class(TZAbstractFirebirdInterbasePreparedStatement, IZFirebirdStatement)
   private
     FMaxRowsPerBatch: Integer;
     FFBConnection: IZFirebirdConnection;
@@ -103,6 +108,17 @@ type
     procedure ExecuteInternal;
 
     function LobTransactionEqualsToActiveTransaction(const Lob: IZInterbaseFirebirdLob): Boolean; override;
+    /// <summary>
+    ///   Returns the Firebird transaction interface to use.
+    ///   The result is from a Transaction, if one is set. Otherwise the
+    ///   transaction in the connection object is used.
+    /// </summary>
+    function GetFbTransaction: ITransaction;
+    /// <summary>
+    ///   Returns the IZFBTransaction interface to use.
+    ///   Mainly introduced for the benefit of the ResultSet.
+    /// </summary>
+    function GetActiveTransaction: IZFirebirdTransaction;
   protected
     /// <summary>Prepares eventual structures for binding input parameters.</summary>
     procedure PrepareInParameters; override;
@@ -267,7 +283,7 @@ begin
     if DriverManager.HasLoggingListener then
       DriverManager.LogMessage(lcBindPrepStmt,Self);
     RestartTimer;
-    FFBTransaction := FFBConnection.GetActiveTransaction.GetTransaction;
+    FFBTransaction := GetFbTransaction;
     if FStatementType in [stSelect, stSelectForUpdate] then begin
       (* commented, somesting in fblclient is killing our stack/heap for some selects
        using a scrollable cursor..
@@ -371,6 +387,22 @@ begin
   else Result := False;
 end;
 
+function TZAbstractFirebirdStatement.GetFbTransaction: ITransaction;
+begin
+  if Assigned(FTransaction) then
+    Result := (FTransaction as IZFirebirdTransaction).GetTransaction
+  else
+    Result := FFBConnection.GetActiveTransaction.GetTransaction;
+end;
+
+function TZAbstractFirebirdStatement.GetActiveTransaction: IZFirebirdTransaction;
+begin
+  if Assigned(FTransaction) then
+    Result := (FTransaction as IZFirebirdTransaction)
+  else
+    Result := FFBConnection.GetActiveTransaction
+end;
+
 procedure TZAbstractFirebirdStatement.Prepare;
 var Transaction: ITransaction;
   TimeOut, flags: Cardinal;
@@ -413,7 +445,7 @@ begin
   if not Prepared then begin
     RestartTimer;
     FMemPerRow := 0;
-    Transaction := FFBConnection.GetActiveTransaction.GetTransaction;
+    Transaction := GetFbTransaction;
     if FWeakIZPreparedStatementPtr <> nil
     then flags := cIStatement_PREPARE_PREFETCH_METADATA
     else flags := cIStatement_PREPARE_PREFETCH_TYPE or cIStatement_PREPARE_PREFETCH_OUTPUT_PARAMETERS;
@@ -668,7 +700,7 @@ begin
   {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
     { create blob handle }
     Attachment := FFBConnection.GetAttachment;
-    Transaction := FFBConnection.GetActiveTransaction.GetTransaction;
+    Transaction := GetFbTransaction;
     Blob := Attachment.createBlob(FStatus, Transaction, PISC_QUAD(sqldata), 0, nil);
     if (FStatus.getState and cIStatus_STATE_ERRORS) <> 0 then
       FFBConnection.HandleErrorOrWarning(lcBindPrepStmt, PARRAY_ISC_STATUS(FStatus.getErrors), 'IAttachment.createBlob', Self);
@@ -758,7 +790,7 @@ begin
   BatchStatement.BindList.Count := BindList.Count; //skip checkparameter
   BatchStatement.FInData := FInData; //now the helper instance scriples in memory of this instance
   try
-    Transaction := FFBConnection.GetActiveTransaction.GetTransaction;
+    Transaction := GetFbTransaction;
     //bind the arrays row by row
     for i := 0 to BatchDMLArrayCount -1 do begin
       BindSQLDAInParameters(BindList, BatchStatement, i, 1);

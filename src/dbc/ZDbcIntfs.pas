@@ -1989,6 +1989,7 @@ type
     /// <summary>Result a unique internal Id per class.</summary>
     /// <returns>the the new class id.</returns>
     function GetStatementId: NativeUInt;
+    procedure SetTransaction(ATransaction: IZTransaction);
   end;
 
   /// <summary>Defines prepared SQL statement interface.</summary>

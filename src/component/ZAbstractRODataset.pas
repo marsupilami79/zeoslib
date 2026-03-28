@@ -3780,6 +3780,8 @@ begin
     {$ELSE}
     Result := TxnCon.PrepareStatementWithParams(SQL, Temp);
     {$ENDIF}
+    if Assigned(FTransaction) then
+      Result.SetTransaction(THackTransaction(FTransaction).GetIZTransaction);
   finally
     Temp.Free;
   end;

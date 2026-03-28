@@ -100,6 +100,7 @@ type
     FWeakIZStatementPtr: Pointer; //weak reference to IZStatement intf of Self
     FWeakIZLoggingObjectPtr: Pointer; //weak reference to IZLoggingObject intf of Self
     FCursorLocation: TZCursorLocation;
+    FTransaction: IZTransaction;
     procedure PrepareOpenResultSetForReUse; virtual;
     procedure PrepareLastResultSetForReUse; virtual;
     procedure FreeOpenResultSetReference(const ResultSet: IZResultSet);
@@ -309,6 +310,7 @@ type
     /// <summary>Get the cursor type of this resultset</summary>
     /// <returns>the CursorLocation of this resultset</returns>
     function GetCursorLocation: TZCursorLocation;
+    procedure SetTransaction(ATransaction: IZTransaction); virtual;
   end;
 
   TZBindType = (zbtNull, zbt8Byte, zbt4Byte,
@@ -2374,6 +2376,11 @@ end;
 function TZAbstractStatement.GetCursorLocation: TZCursorLocation;
 begin
   Result := FCursorLocation
+end;
+
+procedure TZAbstractStatement.SetTransaction(ATransaction: IZTransaction);
+begin
+  FTransaction := ATransaction;
 end;
 
 function TZAbstractStatement.GetParameters: TStrings;

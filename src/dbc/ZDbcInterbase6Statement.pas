@@ -103,6 +103,7 @@ type
     function CreateConversionError(Index: Cardinal; Current: TZSQLType): EZSQLException; override;
 
     function LobTransactionEqualsToActiveTransaction(const Lob: IZInterbaseFirebirdLob): Boolean; override;
+    function GetTrHandle: PISC_TR_HANDLE;
   public
     /// <summary>Constructs this object and assignes the main properties.</summary>
     /// <param>"Connection" the IZInterbase6Connection interface which creates
@@ -150,16 +151,22 @@ type
     ///  error handling in any kind.</param>
     procedure ReleaseImmediat(const Sender: IImmediatelyReleasable;
       var AError: EZSQLConnectionLost); override;
+    procedure SetTransaction(ATransaction: IZTransaction); override;
+  end;
+
+  IZInterbase6Statement = Interface(IZStatement)
+    ['{1A74F312-E972-4F8C-96AF-AAFBAAB9C594}']
+    function GetTrHandle: PISC_TR_HANDLE;
   end;
 
   /// <summary>Implements a prepared SQL Statement for Interbase or Firebird
   ///  using the "legacy" api.</summary>
   TZInterbase6PreparedStatement = class(TZAbstractInterbase6PreparedStatement,
-    IZPreparedStatement);
+    IZPreparedStatement, IZInterbase6Statement);
 
   /// <summary>Implements a SQL Statement for Interbase or Firebird
   ///  using the "legacy" api.</summary>
-  TZInterbase6Statement = class(TZAbstractInterbase6PreparedStatement, IZStatement)
+  TZInterbase6Statement = class(TZAbstractInterbase6PreparedStatement, IZInterbase6Statement)
   public
     constructor Create(const Connection: IZInterbase6Connection; Info: TStrings);
   end;
@@ -203,7 +210,7 @@ begin
     if DriverManager.HasLoggingListener then
       DriverManager.LogMessage(lcBindPrepStmt,Self);
     RestartTimer;
-    ISC_TR_HANDLE := FIBConnection.GetTrHandle;
+    ISC_TR_HANDLE := GetTrHandle;
     dialect := FIBConnection.GetDialect;
     if (FStatementType = stExecProc)
     then iError := FPlainDriver.isc_dsql_execute2(@FStatusVector, ISC_TR_HANDLE,
@@ -218,7 +225,7 @@ begin
 
       if FPlainDriver.isc_dsql_sql_info(@FStatusVector, @FStmtHandle, 1,
           @ReqInfo, SizeOf(TByteBuffer), PAnsiChar(FByteBuffer)) <> 0 then
-        FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_sql_info'{$ELSE}ASQL{$ENDIF}, Self);
+        FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_sql_info'{$ELSE}SqlString(ASQL){$ENDIF}, Self);
       if FByteBuffer[0] <> isc_info_sql_records then
         Exit;
 
@@ -285,6 +292,14 @@ procedure TZAbstractInterbase6PreparedStatement.ReleaseImmediat(
 begin
   FStmtHandle := 0;
   inherited ReleaseImmediat(Sender, AError);
+end;
+
+procedure TZAbstractInterbase6PreparedStatement.SetTransaction(ATransaction: IZTransaction);
+begin
+  if Assigned(ATransaction) then
+    if not Supports(ATransaction, IZIBTransaction) then
+      raise EZSQLException.Create('Assigning anything but an IZIBTransaction is not supported.');
+  inherited;
 end;
 
 constructor TZAbstractInterbase6PreparedStatement.Create(const Connection: IZInterbase6Connection;
@@ -391,117 +406,115 @@ label jmpEB;
   end;
 begin
   if (not Prepared) then begin
-    with FIBConnection do begin
     { Allocate an sql statement }
     if FStmtHandle = 0 then
-      if FPlainDriver.isc_dsql_allocate_statement(@FStatusVector, GetDBHandle, @FStmtHandle) <> 0 then
+      if FPlainDriver.isc_dsql_allocate_statement(@FStatusVector, FIBConnection.GetDBHandle, @FStmtHandle) <> 0 then
         FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, 'isc_dsql_allocate_statement', Self);
       { Prepare an sql statement }
-      //get overlong string running:
-      //see request https://zeoslib.sourceforge.io/viewtopic.php?f=40&p=147689#p147689
-      //http://tracker.firebirdsql.org/browse/CORE-1117?focusedCommentId=31493&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#action_31493
-      L := Length(ASQL);
-      if L > High(Word) then begin//test word range overflow
-        if ZFastCode.Pos(RawByteString(#0), ASQL) > 0 then
-          raise EZSQLException.Create('Statements longer than 64KB may not contain the #0 character.');
-        MaxLen := GetConnection.GetMetadata.GetDatabaseInfo.GetMaxStatementLength;
-        if L > MaxLen then
-          raise EZSQLException.Create('Statements longer than ' + ZFastCode.IntToStr(MaxLen) + ' bytes are not supported by your database.');
-        L := 0; //fall back to C-String behavior
-      end;
-      Status := FPlainDriver.isc_dsql_prepare(@FStatusVector, GetTrHandle, @FStmtHandle,
-          Word(L), Pointer(ASQL), GetDialect, nil);
-      if (Status <> 0) or (FStatusVector[2] = isc_arg_warning) then
-        FIBConnection.HandleErrorOrWarning(lcPrepStmt, @FStatusVector, SQL, Self);
-      if DriverManager.HasLoggingListener then
-        DriverManager.LogMessage(lcPrepStmt,Self);
-      if Assigned(FPlainDriver.fb_dsql_set_timeout) then begin
-        Mem := StrToInt(DefineStatementParameter(Self, DSProps_StatementTimeOut, '0'));
-        if Mem <> 0 then
-          if FPlainDriver.fb_dsql_set_timeout(@FStatusVector, @FStmtHandle, Mem) <> 0 then
-            FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, 'fb_dsql_set_timeout', Self);
-      end;
-      { Set Statement Type }
-      TypeItem := AnsiChar(isc_info_sql_stmt_type);
+    //get overlong string running:
+    //see request https://zeoslib.sourceforge.io/viewtopic.php?f=40&p=147689#p147689
+    //http://tracker.firebirdsql.org/browse/CORE-1117?focusedCommentId=31493&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#action_31493
+    L := Length(ASQL);
+    if L > High(Word) then begin//test word range overflow
+      if ZFastCode.Pos(RawByteString(#0), ASQL) > 0 then
+        raise EZSQLException.Create('Statements longer than 64KB may not contain the #0 character.');
+      MaxLen := GetConnection.GetMetadata.GetDatabaseInfo.GetMaxStatementLength;
+      if L > MaxLen then
+        raise EZSQLException.Create('Statements longer than ' + ZFastCode.IntToStr(MaxLen) + ' bytes are not supported by your database.');
+      L := 0; //fall back to C-String behavior
+    end;
+    Status := FPlainDriver.isc_dsql_prepare(@FStatusVector, GetTrHandle, @FStmtHandle,
+        Word(L), Pointer(ASQL), FIBConnection.GetDialect, nil);
+    if (Status <> 0) or (FStatusVector[2] = isc_arg_warning) then
+      FIBConnection.HandleErrorOrWarning(lcPrepStmt, @FStatusVector, SQL, Self);
+    if DriverManager.HasLoggingListener then
+      DriverManager.LogMessage(lcPrepStmt,Self);
+    if Assigned(FPlainDriver.fb_dsql_set_timeout) then begin
+      Mem := StrToInt(DefineStatementParameter(Self, DSProps_StatementTimeOut, '0'));
+      if Mem <> 0 then
+        if FPlainDriver.fb_dsql_set_timeout(@FStatusVector, @FStmtHandle, Mem) <> 0 then
+          FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, 'fb_dsql_set_timeout', Self);
+    end;
+    { Set Statement Type }
+    TypeItem := AnsiChar(isc_info_sql_stmt_type);
 
-      { Get information about a prepared DSQL statement. }
-      if FPlainDriver.isc_dsql_sql_info(@FStatusVector, @FStmtHandle, 1,
-          @TypeItem, SizeOf(Buffer), @Buffer[0]) <> 0 then
-        FIBConnection.HandleErrorOrWarning(lcPrepStmt, @FStatusVector, SQL, Self);
+    { Get information about a prepared DSQL statement. }
+    if FPlainDriver.isc_dsql_sql_info(@FStatusVector, @FStmtHandle, 1,
+        @TypeItem, SizeOf(Buffer), @Buffer[0]) <> 0 then
+      FIBConnection.HandleErrorOrWarning(lcPrepStmt, @FStatusVector, SQL, Self);
 
-      if Buffer[0] = AnsiChar(isc_info_sql_stmt_type)
-      then FStatementType := TZIbSqlStatementType(ReadInterbase6Number(FPlainDriver, @Buffer[1]))
-      else FStatementType := stUnknown;
+    if Buffer[0] = AnsiChar(isc_info_sql_stmt_type)
+    then FStatementType := TZIbSqlStatementType(ReadInterbase6Number(FPlainDriver, @Buffer[1]))
+    else FStatementType := stUnknown;
 
-      if FStatementType in [stUnknown, stGetSegment, stPutSegment, stStartTrans, stCommit, stRollback] then begin
-        FPlainDriver.isc_dsql_free_statement(@FStatusVector, @FStmtHandle, DSQL_CLOSE);
-        raise EZSQLException.Create(SStatementIsNotAllowed);
-      end else if FStatementType in [stSelect, stExecProc, stSelectForUpdate] then begin
-        FResultXSQLDA := TZSQLDA.Create(Connection, ConSettings);
-        { Initialise ouput param and fields }
-        XSQLDA := FResultXSQLDA.GetData;
+    if FStatementType in [stUnknown, stGetSegment, stPutSegment, stStartTrans, stCommit, stRollback] then begin
+      FPlainDriver.isc_dsql_free_statement(@FStatusVector, @FStmtHandle, DSQL_CLOSE);
+      raise EZSQLException.Create(SStatementIsNotAllowed);
+    end else if FStatementType in [stSelect, stExecProc, stSelectForUpdate] then begin
+      FResultXSQLDA := TZSQLDA.Create(Connection, ConSettings);
+      { Initialise ouput param and fields }
+      XSQLDA := FResultXSQLDA.GetData;
+      if FPlainDriver.isc_dsql_describe(@FStatusVector, @FStmtHandle, Word(FDialect), XSQLDA) <> 0 then
+        FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_describe'{$ELSE}''{$ENDIF}, Self);
+      FOrgTypeList.Clear;
+      if FResultXSQLDA.GetData^.sqld <> FResultXSQLDA.GetData^.sqln then begin
+        XSQLDA := FResultXSQLDA.AllocateSQLDA;
         if FPlainDriver.isc_dsql_describe(@FStatusVector, @FStmtHandle, Word(FDialect), XSQLDA) <> 0 then
           FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_describe'{$ELSE}''{$ENDIF}, Self);
-        FOrgTypeList.Clear;
-        if FResultXSQLDA.GetData^.sqld <> FResultXSQLDA.GetData^.sqln then begin
-          XSQLDA := FResultXSQLDA.AllocateSQLDA;
-          if FPlainDriver.isc_dsql_describe(@FStatusVector, @FStmtHandle, Word(FDialect), XSQLDA) <> 0 then
-            FIBConnection.HandleErrorOrWarning(lcOther, @FStatusVector, {$IFDEF ZEOSDEBUG}'isc_dsql_describe'{$ELSE}''{$ENDIF}, Self);
+      end;
+      FOutMessageCount := FResultXSQLDA.GetData.sqld;
+      FOrgTypeList.Capacity := FOutMessageCount;
+      if FOutMessageCount > 0 then begin
+        Mem := 0;
+        {$R-}
+        for Index := 0 to FOutMessageCount -1 do begin
+          XSQLVAR := @XSQLDA.sqlvar[Index];
+        {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
+          NewSQLType := XSQLVAR.sqltype and not 1;
+          FOrgTypeList.Add(NewSQLType, XSQLVAR.sqlscale, XSQLVAR.sqltype and 1 = 1);
+          if (NewSQLType = SQL_INT128) or (NewSQLType = SQL_DEC_FIXED) then begin
+            NewSQLType := SQL_VARYING;
+            if XSQLVAR.sqltype and 1 = 1 then
+              NewSQLType := NewSQLType and 1;
+            XSQLVAR.sqltype := NewSQLType;
+            XSQLVAR.sqlsubtype := CS_NONE;
+            XSQLVAR.sqllen := 46;
+          end else if (NewSQLType = SQL_TIME_TZ_EX) or (NewSQLType = SQL_TIME_TZ) then begin
+            NewSQLType := SQL_TYPE_TIME;
+            if XSQLVAR.sqltype and 1 = 1 then
+              NewSQLType := NewSQLType and 1;
+            XSQLVAR.sqltype := NewSQLType;
+            XSQLVAR.sqllen := SizeOf(TISC_TIME);
+          end else if (NewSQLType = SQL_DEC16) or (NewSQLType = SQL_DEC34) then begin
+            NewSQLType := SQL_DOUBLE;
+            if XSQLVAR.sqltype and 1 = 1 then
+              NewSQLType := NewSQLType and 1;
+            XSQLVAR.sqltype := NewSQLType;
+            XSQLVAR.sqllen := SizeOf(Double);
+          end;
+          Mem := mem + XSQLVAR.sqllen;
+          if XSQLVAR.sqltype and not (1) = SQL_VARYING then
+            Mem := mem + SizeOf(ISC_USHORT);
+          if XSQLVAR.sqltype and 1 = 1 then //nullable?
+            Mem := mem + SizeOf(ISC_SHORT); //null indicator;
         end;
-        FOutMessageCount := FResultXSQLDA.GetData.sqld;
-        FOrgTypeList.Capacity := FOutMessageCount;
-        if FOutMessageCount > 0 then begin
-          Mem := 0;
-          {$R-}
-          for Index := 0 to FOutMessageCount -1 do begin
-            XSQLVAR := @XSQLDA.sqlvar[Index];
-          {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
-            NewSQLType := XSQLVAR.sqltype and not 1;
-            FOrgTypeList.Add(NewSQLType, XSQLVAR.sqlscale, XSQLVAR.sqltype and 1 = 1);
-            if (NewSQLType = SQL_INT128) or (NewSQLType = SQL_DEC_FIXED) then begin
-              NewSQLType := SQL_VARYING;
-              if XSQLVAR.sqltype and 1 = 1 then
-                NewSQLType := NewSQLType and 1;
-              XSQLVAR.sqltype := NewSQLType;
-              XSQLVAR.sqlsubtype := CS_NONE;
-              XSQLVAR.sqllen := 46;
-            end else if (NewSQLType = SQL_TIME_TZ_EX) or (NewSQLType = SQL_TIME_TZ) then begin
-              NewSQLType := SQL_TYPE_TIME;
-              if XSQLVAR.sqltype and 1 = 1 then
-                NewSQLType := NewSQLType and 1;
-              XSQLVAR.sqltype := NewSQLType;
-              XSQLVAR.sqllen := SizeOf(TISC_TIME);
-            end else if (NewSQLType = SQL_DEC16) or (NewSQLType = SQL_DEC34) then begin
-              NewSQLType := SQL_DOUBLE;
-              if XSQLVAR.sqltype and 1 = 1 then
-                NewSQLType := NewSQLType and 1;
-              XSQLVAR.sqltype := NewSQLType;
-              XSQLVAR.sqllen := SizeOf(Double);
-            end;
-            Mem := mem + XSQLVAR.sqllen;
-            if XSQLVAR.sqltype and not (1) = SQL_VARYING then
-              Mem := mem + SizeOf(ISC_USHORT);
-            if XSQLVAR.sqltype and 1 = 1 then //nullable?
-              Mem := mem + SizeOf(ISC_SHORT); //null indicator;
-          end;
-          if Mem = 0 then //see TestTicket426
-            Mem := SizeOf(Cardinal);
-          GetMem(FOutData, Mem); //alloc space as one block
-          P := FOutData;
-          {$R-}
-          for Index := 0 to FOutMessageCount -1 do begin
-            XSQLVAR := @XSQLDA.sqlvar[Index];
-          {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
-            XSQLVAR.sqldata := P;
-            Inc(P, XSQLVAR.sqllen);
-            if XSQLVAR.sqltype and not (1) = SQL_VARYING then
-              Inc(P, SizeOf(ISC_SHORT));
-            if XSQLVAR.sqltype and 1 = 1 then begin //nullable?
-              XSQLVAR.sqlind := PISC_SHORT(P);
-              Inc(P, SizeOf(ISC_SHORT));
-            end else
-              XSQLVAR.sqlind := nil;
-          end;
+        if Mem = 0 then //see TestTicket426
+          Mem := SizeOf(Cardinal);
+        GetMem(FOutData, Mem); //alloc space as one block
+        P := FOutData;
+        {$R-}
+        for Index := 0 to FOutMessageCount -1 do begin
+          XSQLVAR := @XSQLDA.sqlvar[Index];
+        {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
+          XSQLVAR.sqldata := P;
+          Inc(P, XSQLVAR.sqllen);
+          if XSQLVAR.sqltype and not (1) = SQL_VARYING then
+            Inc(P, SizeOf(ISC_SHORT));
+          if XSQLVAR.sqltype and 1 = 1 then begin //nullable?
+            XSQLVAR.sqlind := PISC_SHORT(P);
+            Inc(P, SizeOf(ISC_SHORT));
+          end else
+            XSQLVAR.sqlind := nil;
         end;
       end;
     end;
@@ -675,10 +688,9 @@ begin
   with FInParamDescripors[Index] do begin
   {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
     { create blob handle }
-    with FIBConnection do
-      if FPlainDriver.isc_create_blob2(@StatusVector, GetDBHandle, GetTrHandle,
-        @BlobHandle, PISC_QUAD(sqldata), 0, nil) <> 0 then
-      HandleErrorOrWarning(lcBindPrepStmt, @FStatusVector, 'create lob', Self);
+    if FPlainDriver.isc_create_blob2(@StatusVector, FIBConnection.GetDBHandle, GetTrHandle,
+      @BlobHandle, PISC_QUAD(sqldata), 0, nil) <> 0 then
+    FIBConnection.HandleErrorOrWarning(lcBindPrepStmt, @FStatusVector, 'create lob', Self);
 
     { put data to blob }
     CurPos := 0;
@@ -774,6 +786,14 @@ begin
   if (IBTransaction <> nil) and (IBTransaction.QueryInterface(IZInterbaseFirebirdTransaction, IBFBTxn) = S_OK)
   then Result := Lob.LobIsPartOfTxn(IBFBTxn)
   else Result := False;
+end;
+
+function TZAbstractInterbase6PreparedStatement.GetTrHandle: PISC_TR_HANDLE;
+begin
+  if Assigned(FTransaction) then
+    Result := (FTransaction as IZIBTransaction).GetTrHandle
+  else
+    Result := FIBConnection.GetTrHandle;
 end;
 
 { TZInterbase6Statement }
