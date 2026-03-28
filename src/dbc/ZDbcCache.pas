@@ -3670,6 +3670,10 @@ begin
   Result := nil;
   {$IFNDEF GENERIC_INDEX}ColumnIndex := ColumnIndex - 1;{$ENDIF}
   {$R-}
+  if not Assigned(FBuffer) then begin
+    IsNull := true;
+    Exit;
+  end;
   TempBlob := @FBuffer.Columns[FColumnOffsets[ColumnIndex] + 1];
   IsNull := FBuffer.Columns[FColumnOffsets[ColumnIndex]] = bIsNull;
   {$IFDEF RangeCheckEnabled} {$R+} {$ENDIF}
