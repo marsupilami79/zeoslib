@@ -1,6 +1,6 @@
 /*==============================================================*/
 /* Database name:  SQLite                                       */
-/* DBMS name:      SQLite 2.8                                   */
+/* DBMS name:      SQLite 2.8 and up                            */
 /* Created on:     04.02.2003 20:01:43                          */
 /*==============================================================*/
 
@@ -72,13 +72,13 @@ primary key  (d_id)
 /* Table : default_values                                       */
 /*==============================================================*/
 create table default_values(
-   d_id                           integer     not null,
-   d_fld1                         int         default 123456,
-   d_fld2                         float       default 123.456,
-   d_fld3                     	  varchar(10) default 'xyz',
-   d_fld4                     	  date        default '2003-12-11',
-   d_fld5                     	  time        default '23:12:11',
-   d_fld6                     	  datetime    default '2003-12-11 23:12:11',
+   d_id              integer            not null,
+   d_fld1            int                default 123456,
+   d_fld2            float              default 123.456,
+   d_fld3            varchar(10)        default 'xyz',
+   d_fld4            date               default '2003-12-11',
+   d_fld5            time               default '23:12:11',
+   d_fld6            datetime           default '2003-12-11 23:12:11',
    primary key (d_id)
 );
 
@@ -86,13 +86,13 @@ create table default_values(
 /* Table : default_values2                                       */
 /*==============================================================*/
 create table default_values2(
-   d_id                           integer     not null,
-   d_fld1                         float       default 123.456,
-   d_fld2                         int         default 123456,
-   d_fld3                     	  date        default '2003-12-11',
-   d_fld4                     	  varchar(10) default 'xyz',
-   d_fld5                     	  datetime    default '2003-12-11 23:12:11',
-   d_fld6                     	  time        default '23:12:11',
+   d_id              integer            not null,
+   d_fld1            float              default 123.456,
+   d_fld2            int                default 123456,
+   d_fld3            date               default '2003-12-11',
+   d_fld4            varchar(10)        default 'xyz',
+   d_fld5            datetime           default '2003-12-11 23:12:11',
+   d_fld6            time               default '23:12:11',
    primary key (d_id)
 );
 
@@ -185,8 +185,8 @@ primary key  (s_id)
 /*==============================================================*/
 create table not_null_values
 (
-   n_id                           int              	not null,
-   n_varchar                      VARCHAR(255)		not null,
+   n_id              int                not null,
+   n_varchar         VARCHAR(255)       not null,
    primary key (n_id)
 );
 
@@ -195,10 +195,10 @@ create table not_null_values
 /* Table : case_sensitive                                       */
 /*==============================================================*/
 create table [case_sensitive] (
-cs_id                 INTEGER                        not null,
-"CS_DATA1"            INTEGER		null,
-"CS_Data2"            INTEGER		null,
-"Cs_Data3"            INTEGER		null,
+cs_id                 INTEGER           not null,
+"CS_DATA1"            INTEGER           null,
+"CS_Data2"            INTEGER           null,
+"Cs_Data3"            INTEGER           null,
 primary key (cs_id)
 );
 
@@ -206,7 +206,7 @@ primary key (cs_id)
 /* Table : Spaced Names                                         */
 /*==============================================================*/
 create table [Spaced Names] (
-cs_id                 INTEGER                        not null,
+cs_id                 INTEGER           not null,
 "Cs Data1"            INTEGER,
 "cs data2"            INTEGER,
 "cS data3"            INTEGER,
@@ -217,7 +217,7 @@ primary key (cs_id)
 /* Table : high_load                                            */
 /*==============================================================*/
 create table high_load (
-hl_id		      INTEGER NOT NULL,
+hl_id                 INTEGER           NOT NULL,
 stBoolean             BOOLEAN,
 stByte                TINYINT,
 stShort               SMALLINT,
@@ -244,9 +244,9 @@ primary key (hl_id)
 /* Table : empty_types                                          */
 /*==============================================================*/
 create table empty_types (
-et_id		      NOT NULL,
-data1		      NOT NULL,
-data2		      NOT NULL,
+et_id                                   NOT NULL,
+data1                                   NOT NULL,
+data2                                   NOT NULL,
 primary key (et_id)
 );
 
@@ -255,15 +255,15 @@ primary key (et_id)
 /*==============================================================*/
 create table bcd_values
 (
-   id                             INTEGER NOT NULL,
-   curr18_4                       INT(18,4),
-   curr15_2                       INT(15,2),
-   curr10_4                       INT(10,4),
-   curr4_4                        INT(4,4),
-   bigd18_1                       NUMERIC(18,1),
-   bigd18_5                       NUMERIC(18,5),
-   bigd12_10                      NUMERIC(12,10),
-   bigd18_18                      NUMERIC(18,18),
+   id                INTEGER            NOT NULL,
+   curr18_4          INT(18,4),
+   curr15_2          INT(15,2),
+   curr10_4          INT(10,4),
+   curr4_4           INT(4,4),
+   bigd18_1          NUMERIC(18,1),
+   bigd18_5          NUMERIC(18,5),
+   bigd12_10         NUMERIC(12,10),
+   bigd18_18         NUMERIC(18,18),
    primary key (id)
 );
 

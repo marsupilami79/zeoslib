@@ -58,10 +58,10 @@ interface
 {$I ZComponent.inc}
 
 {$IF defined(DISABLE_INTERBASE_AND_FIREBIRD) and defined(ZEOS_DISABLE_POSTGRESQL)}
-  {$DEFINE ZEOS_DISABLE_TEST_ALLERTER}
+  {$DEFINE ZEOS_DISABLE_TEST_ALERTER}
 {$IFEND}
 
-{$IFNDEF ZEOS_DISABLE_TEST_ALLERTER}
+{$IFNDEF ZEOS_DISABLE_TEST_ALERTER}
 
 uses
   {$IFDEF FPC}testregistry{$ELSE}TestFramework{$ENDIF}, SysUtils, Classes,
@@ -69,8 +69,8 @@ uses
   //{$IFNDEF DISABLE_INTERBASE_AND_FIREBIRD}ZPgEventAlerter,{$ENDIF}
   ZSysUtils, ZSqlTestCase;
 
+{$IFNDEF DISABLE_INTERBASE_AND_FIREBIRD}
 type
-  {$IFNDEF DISABLE_INTERBASE_AND_FIREBIRD}
   {** Implements a test case for class TIBEventAlerter. }
   TZTestInterbaseEventAlert = class(TZAbstractCompSQLTestCase)
   protected
@@ -85,13 +85,13 @@ type
   published
     procedure TestIBAllerter;
   end;
-  {$ENDIF DISABLE_INTERBASE_AND_FIREBIRD}
+{$ENDIF DISABLE_INTERBASE_AND_FIREBIRD}
 
-{$ENDIF ZEOS_DISABLE_TEST_ALLERTER}
+{$ENDIF ZEOS_DISABLE_TEST_ALERTER}
 
 implementation
 
-{$IFNDEF ZEOS_DISABLE_TEST_ALLERTER}
+{$IFNDEF ZEOS_DISABLE_TEST_ALERTER}
 
 uses ZdbcIntfs;
 
@@ -212,5 +212,5 @@ end;
 
 initialization
   RegisterTest('component',TZTestInterbaseEventAlert.Suite);
-{$ENDIF ZEOS_DISABLE_TEST_ALLERTER}
+{$ENDIF ZEOS_DISABLE_TEST_ALERTER}
 end.
