@@ -87,9 +87,9 @@ type
     procedure TestGetBestRowIdentifier;
   end;
 
-{$IFNDEF ZEOS_DISABLE_MYSQL}
-implementation
 {$ENDIF ZEOS_DISABLE_MYSQL}
+implementation
+{$IFNDEF ZEOS_DISABLE_MYSQL}
 
 uses
   ZTestCase, ZDbcMetadata;

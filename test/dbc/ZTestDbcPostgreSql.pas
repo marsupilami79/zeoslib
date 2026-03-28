@@ -89,9 +89,9 @@ type
     procedure Test_Ddbc_PG_EventListener;
   end;
 
-{$IFNDEF ZEOS_DISABLE_POSTGRESQL}
-implementation
 {$ENDIF ZEOS_DISABLE_POSTGRESQL}
+implementation
+{$IFNDEF ZEOS_DISABLE_POSTGRESQL}
 
 uses Types, DateUtils,
   SysUtils, ZTestConsts, ZSysUtils, ZVariant,
