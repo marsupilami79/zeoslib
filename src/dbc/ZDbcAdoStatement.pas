@@ -368,6 +368,8 @@ end;
     query; never <code>null</code>
 }
 function TZAbstractAdoStatement.ExecuteQueryPrepared: IZResultSet;
+var
+  Timeout: Integer;
 begin
   if Assigned(FOpenResultSet) then
     IZResultSet(FOpenResultSet).Close; //Note keep track we close the RS and DO NOT Try to resync them!
@@ -377,6 +379,12 @@ begin
   BindInParameters;
   RestartTimer;
   try
+    Timeout := -1;
+    Timeout := StrToIntDef(GetConnection.GetParameters.Values[DSProps_StatementTimeOut], Timeout);
+    Timeout := StrToIntDef(GetParameters.Values[DSProps_StatementTimeOut], Timeout);
+    if Timeout > 0 then
+      FAdoCommand.CommandTimeout := Timeout;
+
     if FIsSelectSQL then begin
       if (FAdoRecordSet = nil) or (FAdoRecordSet.MaxRecords <> MaxRows) then begin
         FAdoRecordSet := CoRecordSet.Create;

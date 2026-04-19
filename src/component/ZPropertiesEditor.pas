@@ -1014,8 +1014,8 @@ const
   );
 {$IFEND}
 {$IF declared(DSProps_StatementTimeOut)}
-  const AllODBC_OleDB_Firebird_Interbase: array[0..3] of String =
-    ('odbc','OleDB','firebird','interbase');
+  const AllODBC_OleDB_Firebird_Interbase: array[0..4] of String =
+    ('odbc','OleDB','ADO','firebird','interbase');
   ZProp_StatementTimeOut : TZProperty = (
     Name: DSProps_StatementTimeOut;
     Purpose: 'Execution timeout of a statement.'+LineEnding+

@@ -323,7 +323,7 @@ const
   DSProps_DeferPrepare = 'DeferPrepare';
 {$IFEND}
 
-{$IF DEFINED(ENABLE_ODBC) OR DEFINED(ENABLE_OLEDB) OR DEFINED(ENABLE_FIREBIRD) or DEFINED(ENABLE_INTERBASE)}
+{$IF DEFINED(ENABLE_ODBC) OR DEFINED(ENABLE_OLEDB) OR DEFINED(ENABLE_ADO) OR DEFINED(ENABLE_FIREBIRD) or DEFINED(ENABLE_INTERBASE)}
   // Type: INT
   // Execution timeout in seconds/milliseconds for FireBird
   DSProps_StatementTimeOut = 'StatementTimeOut'; //since FB4 also
