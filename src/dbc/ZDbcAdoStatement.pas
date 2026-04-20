@@ -340,6 +340,7 @@ end;
 function TZAbstractAdoStatement.ExecutePrepared: Boolean;
 var
   RC: OleVariant;
+  Timeout: Integer;
 begin
   LastResultSet := nil;
   LastUpdateCount := -1;
@@ -348,6 +349,13 @@ begin
   BindInParameters;
   try
     RestartTimer;
+
+    Timeout := -1;
+    Timeout := StrToIntDef(GetConnection.GetParameters.Values[DSProps_StatementTimeOut], Timeout);
+    Timeout := StrToIntDef(GetParameters.Values[DSProps_StatementTimeOut], Timeout);
+    if Timeout > 0 then
+      FAdoCommand.CommandTimeout := Timeout;
+
     FAdoRecordSet := FAdoCommand.Execute(RC, EmptyParam, adOptionUnspecified);
     LastResultSet := CreateResultSet;
     LastUpdateCount := {%H-}RC;
@@ -429,12 +437,21 @@ end;
   or 0 for SQL statements that return nothing
 }
 function TZAbstractAdoStatement.ExecuteUpdatePrepared: Integer;
+var
+  Timeout: Integer;
 begin
   Prepare;
   LastUpdateCount := -1;
   BindInParameters;
   try
     RestartTimer;
+
+    Timeout := -1;
+    Timeout := StrToIntDef(GetConnection.GetParameters.Values[DSProps_StatementTimeOut], Timeout);
+    Timeout := StrToIntDef(GetParameters.Values[DSProps_StatementTimeOut], Timeout);
+    if Timeout > 0 then
+      FAdoCommand.CommandTimeout := Timeout;
+
     FAdoRecordSet := FAdoCommand.Execute(FRC, EmptyParam, adExecuteNoRecords);
     if BindList.HasOutOrInOutOrResultParam then
       LastResultSet := CreateResultSet;
