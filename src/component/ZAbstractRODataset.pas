@@ -1040,7 +1040,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
   published
-    property Currency default True;
+    property currency default True;
   end;
 
   TZSingleField = Class({$IFDEF WITH_FTSINGLE}TSingleField{$ELSE}TZDoubleField{$ENDIF})
