@@ -1699,9 +1699,16 @@ end;
 }
 destructor TZAbstractRODataset.Destroy;
 begin
-  Unprepare;
-  if Assigned(Connection) then
-    SetConnection(nil);
+  try
+    Unprepare;
+    if Assigned(Connection) then SetConnection(nil);
+  finally
+    if FConnection <> nil then
+    begin
+      FConnection.UnregisterComponent(Self);
+      FConnection := nil;
+    end;
+  end;
 
   FreeAndNil(FSQL);
   FreeAndNil(FParams);
