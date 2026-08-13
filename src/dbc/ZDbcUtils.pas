@@ -810,6 +810,13 @@ begin
   Dest.scale := Src.SignSpecialPlaces and $3F;
   Dest.sign := Byte(Src.SignSpecialPlaces and (1 shl 7) = 0);
 
+  // Prevent pointer underflow/Access Violation when TBCD is 0 (Precision = 0)
+  if Src.Precision = 0 then
+  begin
+    Dest.precision := 1; // OLEDB often requires precision > 0 even for zero values
+    Exit; 
+  end;
+  
   pFirstNibble := @Src.Fraction[0];
   pLastNibble := pFirstNibble+((Src.Precision -1) shr 1);
   pNibble := pLastNibble-1;
